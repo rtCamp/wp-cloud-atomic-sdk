@@ -7,7 +7,7 @@ This SDK provides a direct and efficient Python interface for the [WP.cloud Atom
 
 This allows you to build automation and integrations without writing boilerplate code, focusing instead on your application's logic.
 
-[▶️ Watch the example video: demo.mp4](https://github.com/user-attachments/assets/58ec3dd2-0515-4159-847a-56476897a23f)
+[▶️ Watch the example video: demo.mp4](https://github.com/user-attachments/assets/285f455b-e3ca-4bb0-98dd-d201d8ea0b0b)
 
 For more examples see the [`examples/`](./examples) directory.
 
