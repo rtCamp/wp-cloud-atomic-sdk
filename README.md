@@ -83,13 +83,17 @@ Once the client is initialized, you can access all API resource groups as attrib
 A common first step is to list all sites associated with your client account.
 
 ```python
+from atomic_sdk import AtomicAPIError, NotFoundError
+
 try:
     sites = client.sites.list()
     print(f"Found {len(sites)} sites.")
     for site in sites:
         print(f"- Site ID: {site['atomic_site_id']}, Domain: {site['domain_name']}")
-except Exception as e:
-    print(f"An error occurred: {e}")
+except NotFoundError:
+    print("No sites found for this account.")
+except AtomicAPIError as e:
+    print(f"API error {e.status_code}: {e.message}")
 ```
 
 ### 2. Getting a Single Site's Details
