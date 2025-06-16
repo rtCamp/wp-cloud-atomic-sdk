@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "atomic-sdk"
+version = "1.0.0-beta"
+authors = [
+    { name = "Riddhesh Sanghvi", email = "riddhesh.sanghvi@rtcamp.com" },
+]
+description = "A Python SDK for the WP.cloud Atomic API."
+readme = "README.md"
+license = { text = "MIT License" }
+requires-python = ">=3.7"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Typed",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+keywords = ["automattic", "wpcloud", "atomic", "wordpress", "hosting", "api", "sdk"]
+
+# Core dependencies
+dependencies = [
+    "requests~=2.31",
+    "pydantic~=2.5",
+    "importlib-metadata; python_version < '3.8'",
+]
+
+[project.urls]
+Homepage = "https://github.com/rtCamp/wp-cloud-atomic-sdk"
+"Bug Tracker" = "https://github.com/rtCamp/wp-cloud-atomic-sdk/issues"
+
+# Optional dependencies for development and testing
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "requests-mock",
+    "black",
+    "isort",
+    "pre-commit",
+    "python-dotenv",
+]
