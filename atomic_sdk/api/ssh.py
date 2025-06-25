@@ -1,4 +1,4 @@
-from typing import List, Optional, Dict, Any, Union, TYPE_CHECKING
+from typing import List, Optional, Dict, Any, Union, TYPE_CHECKING, Literal
 
 from .base import ResourceClient
 from ..models import Job
@@ -90,6 +90,26 @@ class SSHClient(ResourceClient):
         self.alias_pkey = AliasPKeyClient(*args, **kwargs)
 
     # --- Site-Specific SSH User Management ---
+
+    def set_access_type(self, access_type: Literal["ssh", "sftp"], site_id: Optional[int] = None, domain: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Sets the allowed access type (full SSH or SFTP-only) for a site's end-users.
+        This supersedes any platform or client-level defaults.
+
+        Args:
+            access_type: The access level to set. Must be 'ssh' (full shell) or 'sftp' (file transfer only).
+            site_id: The Atomic site ID.
+            domain: The domain name of the site.
+
+        Returns:
+            A dictionary confirming the site and the type of access set.
+        """
+        if access_type not in ["ssh", "sftp"]:
+            raise ValueError("access_type must be either 'ssh' or 'sftp'.")
+
+        service, identifier = self._get_service_and_identifier(site_id, domain)
+        endpoint = f"/site-set-access-type/{service}/{identifier}/{access_type}"
+        return self._get(endpoint)
 
     def list_users(self, site_id: Optional[int] = None, domain: Optional[str] = None) -> List[str]:
         """
