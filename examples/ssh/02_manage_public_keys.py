@@ -17,7 +17,7 @@ SSH_HOSTNAME = "ssh.atomicsites.net"
 
 def main():
     """
-    Demonstrates adding and updating a site-specific SSH user with a public key.
+    Demonstrates adding a key-based SSH user and enabling full SSH shell access for the site.
     """
     if not API_KEY or not CLIENT_ID or not SITE_DOMAIN:
         print("Error: Please set ATOMIC_API_KEY and ATOMIC_CLIENT_ID in your .env file.")
@@ -28,38 +28,46 @@ def main():
 
     print("--- Initializing AtomicClient ---")
     client = AtomicClient(api_key=API_KEY, client_id_or_name=CLIENT_ID)
+    site_id = None
 
     try:
         # --- 1. Find the site ---
-        print(f"\n--- Looking for site '{SITE_DOMAIN}' ---")
+        print(f"\n--- [1/3] Looking for site '{SITE_DOMAIN}' ---")
         site = client.sites.get(domain=SITE_DOMAIN)
+        site_id = site.atomic_site_id
         print(f"Found site ID: {site.atomic_site_id}.")
 
         # --- 2. Add user with a public key and no password ---
-        print(f"\n--- Adding key-based user '{SSH_KEY_USER}' ---")
-        # An empty string for the password disables password-based login.
+        print(f"\n--- [2/3] Adding key-based user '{SSH_KEY_USER}' ---")
         client.ssh.add_user(
             username=SSH_KEY_USER,
-            site_id=site.atomic_site_id,
+            site_id=site_id,
             public_key=PUBLIC_KEY,
             password=""
         )
         print("  - ✅ User with public key added successfully.")
 
+        # --- 3. Enable full SSH shell access for the site ---
+        print(f"\n--- [3/3] Enabling full 'ssh' access for site {site_id} ---")
+        # Default is often 'sftp'-only. This grants shell access.
+        response = client.ssh.set_access_type(access_type="ssh", site_id=site_id)
+        print(f"  - ✅ Access type set to '{response.get('type')}' successfully.")
+
+        # --- How to Connect ---
         print("\n" + "="*35)
-        print("  HOW TO CONNECT (KEY AUTH)")
+        print("  HOW TO CONNECT (KEY AUTH + SHELL)")
         print("="*35)
-        print("Use the following commands to connect to your site.")
+        print("Use the following command to get a full SSH shell.")
         print("This assumes your corresponding private key is in your ssh-agent or ~/.ssh/")
-        print(f"\n  SFTP Command:")
-        print(f"    sftp {SSH_KEY_USER}@{SSH_HOSTNAME}")
+        print(f"\n  SSH Command:")
+        print(f"    ssh {SSH_KEY_USER}@{SSH_HOSTNAME}")
         print("="*35 + "\n")
 
     except (AtomicAPIError, RuntimeError) as e:
         print(f"\nAn error occurred: {e}")
 
     finally:
-        # --- 3. Cleanup ---
+        # --- 4. Cleanup ---
         print(f"\n--- Cleanup: Removing user '{SSH_KEY_USER}' ---")
         confirm = input(f"Proceed with removing user '{SSH_KEY_USER}'? [y/N]: ")
         if confirm.lower() == 'y':
