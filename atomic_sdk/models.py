@@ -10,7 +10,6 @@ def empty_str_to_none(v: Any) -> Optional[Any]:
         return None
     return v
 
-
 class Site(BaseModel):
     """
     Represents the detailed information for a single site.
@@ -37,7 +36,6 @@ class Site(BaseModel):
         if self.extra:
             return self.extra.get(key, default)
         return default
-
 
 class Job(BaseModel):
     """
@@ -99,7 +97,6 @@ class BackupJob(BaseModel):
 
 class Backup(BaseModel):
     """
-
     Represents a backup record for a site.
     """
     atomic_backup_id: str = Field(..., description="The unique identifier for the backup.")
@@ -134,3 +131,38 @@ class Task(BaseModel):
         if isinstance(v, str) and v == "":
             return None
         return v
+
+class MigrationCreationResponse(BaseModel):
+    """
+    Represents the immediate response after creating a new migration.
+    """
+    migration_id: int = Field(..., alias="migration-id")
+    # The public key is only returned if no private key was provided on creation
+    ssh_id_pub: Optional[str] = Field(None, alias="ssh-id-pub")
+
+    class Config:
+        populate_by_name = True
+
+class ResponseTicket(BaseModel):
+    """
+    Represents a response ticket used for monitoring migrations and preflights.
+    """
+    response_ticket_id: int = Field(..., alias="response-ticket-id")
+
+    class Config:
+        populate_by_name = True
+
+class Migration(BaseModel):
+    """
+    Represents the full details of a migration object.
+    Sensitive fields are redacted.
+    """
+    migration_id: int = Field(..., alias="migration-id")
+    atomic_site_id: int
+    remote_host: str
+    remote_user: str
+    remote_domain: Optional[str] = None
+    # Add other known, non-sensitive fields from the get response if available
+
+    class Config:
+        populate_by_name = True
