@@ -39,24 +39,24 @@ def main():
 
     with open(MIGRATION_ID_FILE, "r") as f:
         migration_id = int(f.read().strip())
-    print(f"--- Found Migration ID: {migration_id} ---")
+    print(f"🔎 Found Migration ID: {migration_id}")
 
     try:
-        print(f"\n--- Running preflight checks for migration {migration_id} ---")
+        print(f"🧪 Running preflight checks for migration {migration_id}...")
         ticket = client.migrations.run_preflight(migration_id=migration_id)
-        print(f"Preflight started. Monitoring migration {migration_id}...")
+        print(f"⏳ Preflight started. Monitoring migration {migration_id}...")
 
         final_status = poll_migration_status(client, migration_id)
 
         if final_status == "success":
             print(f"\n✅ Success! Preflight checks passed for migration {migration_id}.")
-            print("\n--- NEXT STEP ---")
+            print("➡️ NEXT STEP:")
             print("Run '04_start_migration_and_monitor.py' to begin the actual migration.")
         else:
             print(f"\n❌ Failure. Please review the details above, update the migration if needed, and re-run this script.")
 
     except AtomicAPIError as e:
-        print(f"\nAn error occurred: {e}")
+        print(f"❌ An error occurred: {e}")
 
 if __name__ == "__main__":
     main()

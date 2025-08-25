@@ -29,12 +29,12 @@ def main():
         print("Error: Please update the SOURCE_HOST and SOURCE_USER variables in this script.")
         return
 
-    print("--- Initializing AtomicClient ---")
+    print("🔧 Initializing AtomicClient...")
     client = AtomicClient(api_key=API_KEY, client_id_or_name=CLIENT_ID)
 
     try:
         # --- 1. Initiate the migration ---
-        print(f"\n--- Creating migration for destination site '{DESTINATION_DOMAIN}' ---")
+        print(f"🚀 Creating migration for destination site '{DESTINATION_DOMAIN}'...")
 
         creation_response = client.migrations.create(
             domain=DESTINATION_DOMAIN,
@@ -51,10 +51,10 @@ def main():
         # --- 2. Save the migration ID and display instructions ---
         with open(MIGRATION_ID_FILE, "w") as f:
             f.write(str(migration_id))
-        print(f"  - Migration created with ID: {migration_id} (saved to {MIGRATION_ID_FILE})")
+        print(f"✅ Migration created with ID: {migration_id} (saved to {MIGRATION_ID_FILE})")
 
         print("\n" + "="*60)
-        print("  Attempting to install public key on source server via SSH...")
+        print("🔑 Attempting to install public key on source server via SSH...")
         print("="*60)
         import subprocess
         import shlex
@@ -64,26 +64,26 @@ def main():
         try:
             result = subprocess.run(ssh_cmd, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             print(f"\n✅ Success! Public key was added to '~/.ssh/authorized_keys' for user '{SOURCE_USER}' on server '{SOURCE_HOST}'.")
-            print("\n----- BEGIN PUBLIC KEY -----\n")
+            print("🔒 ----- BEGIN PUBLIC KEY -----\n")
             print(public_key)
-            print("\n-----  END PUBLIC KEY  -----\n")
+            print("\n-----  END PUBLIC KEY  -----🔒\n")
             print("="*60)
         except subprocess.CalledProcessError as e:
             print("\n❌ Could not add public key automatically via SSH.")
-            print("Error output:")
+            print("🛑 Error output:")
             sys.stderr.write(e.stderr.decode() if e.stderr else str(e))
-            print(f"\nPlease add the following public key manually to '~/.ssh/authorized_keys' for user '{SOURCE_USER}' on server '{SOURCE_HOST}'.")
-            print("\n----- BEGIN PUBLIC KEY -----\n")
+            print(f"⚠️ Please add the following public key manually to '~/.ssh/authorized_keys' for user '{SOURCE_USER}' on server '{SOURCE_HOST}'.")
+            print("🔒 ----- BEGIN PUBLIC KEY -----\n")
             print(public_key)
-            print("\n-----  END PUBLIC KEY  -----\n")
+            print("\n-----  END PUBLIC KEY  -----🔒\n")
             print("="*60)
-        print("\n--- NEXT STEP ---")
+        print("➡️ NEXT STEP:")
         print("Once the key is installed, run '03_run_preflight_and_monitor.py' to test the connection.")
 
     except NotFoundError:
-        print(f"Error: Destination site '{DESTINATION_DOMAIN}' not found. Please run '01_prepare_destination_site.py' first.")
+        print(f"❌ Error: Destination site '{DESTINATION_DOMAIN}' not found. Please run '01_prepare_destination_site.py' first.")
     except (AtomicAPIError, RuntimeError) as e:
-        print(f"\nAn error occurred: {e}")
+        print(f"❌ An error occurred: {e}")
 
 if __name__ == "__main__":
     main()

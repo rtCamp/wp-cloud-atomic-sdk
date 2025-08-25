@@ -39,15 +39,15 @@ def main():
 
     with open(MIGRATION_ID_FILE, "r") as f:
         migration_id = int(f.read().strip())
-    print(f"--- Found Migration ID: {migration_id} ---")
+    print(f"🔎 Found Migration ID: {migration_id}")
 
     try:
-        print(f"\n--- Setting migration {migration_id} to 'ready' to start the process ---")
+        print(f"🚦 Setting migration {migration_id} to 'ready' to start the process...")
         ticket = client.migrations.set_ready(migration_id=migration_id)
         ticket_id = ticket.response_ticket_id
-        print(f"Response Ticket ID: {ticket_id}")
+        print(f"🎫 Response Ticket ID: {ticket_id}")
 
-        print(f"\n--- Monitoring migration {migration_id} ---")
+        print(f"⏳ Monitoring migration {migration_id}...")
 
         final_status = poll_migration_status(client, migration_id)
 
@@ -57,7 +57,7 @@ def main():
             print(f"\n❌ Failure. Please review the logs, update the migration, and re-run this script if needed.")
 
     except AtomicAPIError as e:
-        print(f"\nAn error occurred: {e}")
+        print(f"❌ An error occurred: {e}")
 
 if __name__ == "__main__":
     main()
