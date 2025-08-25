@@ -54,16 +54,29 @@ def main():
         print(f"  - Migration created with ID: {migration_id} (saved to {MIGRATION_ID_FILE})")
 
         print("\n" + "="*60)
-        print("  ACTION REQUIRED: Install Public Key on Source Server")
+        print("  Attempting to install public key on source server via SSH...")
         print("="*60)
-        print(f"You must add the following public key to the file:")
-        print(f"  `~/.ssh/authorized_keys`")
-        print(f"for the user '{SOURCE_USER}' on the server '{SOURCE_HOST}'.")
-        print("\n----- BEGIN PUBLIC KEY -----\n")
-        print(public_key)
-        print("\n-----  END PUBLIC KEY  -----\n")
-        print("="*60)
-
+        import subprocess
+        import shlex
+        import sys
+        key_escaped = public_key.replace('"', '\\"')
+        ssh_cmd = f"ssh {SOURCE_USER}@{SOURCE_HOST} 'mkdir -p ~/.ssh 2>/dev/null && chmod 700 ~/.ssh && printf \"%s\\n\" \"{key_escaped}\" >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys'"
+        try:
+            result = subprocess.run(ssh_cmd, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            print(f"\n✅ Success! Public key was added to '~/.ssh/authorized_keys' for user '{SOURCE_USER}' on server '{SOURCE_HOST}'.")
+            print("\n----- BEGIN PUBLIC KEY -----\n")
+            print(public_key)
+            print("\n-----  END PUBLIC KEY  -----\n")
+            print("="*60)
+        except subprocess.CalledProcessError as e:
+            print("\n❌ Could not add public key automatically via SSH.")
+            print("Error output:")
+            sys.stderr.write(e.stderr.decode() if e.stderr else str(e))
+            print(f"\nPlease add the following public key manually to '~/.ssh/authorized_keys' for user '{SOURCE_USER}' on server '{SOURCE_HOST}'.")
+            print("\n----- BEGIN PUBLIC KEY -----\n")
+            print(public_key)
+            print("\n-----  END PUBLIC KEY  -----\n")
+            print("="*60)
         print("\n--- NEXT STEP ---")
         print("Once the key is installed, run '03_run_preflight_and_monitor.py' to test the connection.")
 
