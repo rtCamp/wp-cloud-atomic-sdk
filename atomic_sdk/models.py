@@ -147,7 +147,7 @@ class ResponseTicket(BaseModel):
     """
     Represents a response ticket used for monitoring migrations and preflights.
     """
-    response_ticket_id: int = Field(..., alias="response-ticket-id")
+    response_ticket_id: str = Field(..., alias="response-ticket-id")
 
     class Config:
         populate_by_name = True
@@ -157,12 +157,29 @@ class Migration(BaseModel):
     Represents the full details of a migration object.
     Sensitive fields are redacted.
     """
-    migration_id: int = Field(..., alias="migration-id")
-    atomic_site_id: int
-    remote_host: str
-    remote_user: str
-    remote_domain: Optional[str] = None
-    # Add other known, non-sensitive fields from the get response if available
+    migration_id: Optional[int] = Field(None, alias="migration-id")
+    atomic_site_migration_id: str
+    atomic_site_id: str
+    created: str
+    updated: str
+    state: str
+    atomic_client_id: str
+    args: Dict[str, Any]
 
     class Config:
         populate_by_name = True
+
+    @property
+    def remote_host(self) -> Optional[str]:
+        """Extract remote host from args dictionary."""
+        return self.args.get("remote-host")
+
+    @property
+    def remote_user(self) -> Optional[str]:
+        """Extract remote user from args dictionary."""
+        return self.args.get("remote-user")
+
+    @property
+    def remote_domain(self) -> Optional[str]:
+        """Extract remote domain from args dictionary."""
+        return self.args.get("remote-domain")
