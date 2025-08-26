@@ -29,7 +29,6 @@ def main():
         print("Error: Please update the SOURCE_HOST and SOURCE_USER variables in this script.")
         return
 
-    print("🔧 Initializing AtomicClient...")
     client = AtomicClient(api_key=API_KEY, client_id_or_name=CLIENT_ID)
 
     try:
@@ -68,6 +67,7 @@ def main():
             print(public_key)
             print("\n-----  END PUBLIC KEY  -----🔒\n")
             print("="*60)
+            print("The key is installed, run '03_run_preflight_and_monitor.py' to test the connection.")
         except subprocess.CalledProcessError as e:
             print("\n❌ Could not add public key automatically via SSH.")
             print("🛑 Error output:")
@@ -77,8 +77,7 @@ def main():
             print(public_key)
             print("\n-----  END PUBLIC KEY  -----🔒\n")
             print("="*60)
-        print("➡️ NEXT STEP:")
-        print("Once the key is installed, run '03_run_preflight_and_monitor.py' to test the connection.")
+            print("Once the key is installed, run '03_run_preflight_and_monitor.py' to test the connection.")
 
     except NotFoundError:
         print(f"❌ Error: Destination site '{DESTINATION_DOMAIN}' not found. Please run '01_prepare_destination_site.py' first.")

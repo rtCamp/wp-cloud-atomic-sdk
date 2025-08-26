@@ -40,7 +40,6 @@ def main():
         print("Error: Please set credentials in your .env file.")
         return
 
-    print("🔧 Initializing AtomicClient...")
     client = AtomicClient(api_key=API_KEY, client_id_or_name=CLIENT_ID)
 
     try:

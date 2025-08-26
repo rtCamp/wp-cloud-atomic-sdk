@@ -27,7 +27,7 @@ def poll_migration_status(client, migration_id):
         elif state == "preflight-failed":
             return "failure"
 
-        time.sleep(10)
+        time.sleep(20)
 
 def main():
     if not API_KEY or not CLIENT_ID: return
