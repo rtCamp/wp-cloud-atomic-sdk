@@ -25,7 +25,7 @@ def main():
     key that must be installed on the source server.
     """
     if not API_KEY or not CLIENT_ID: return
-    if "source.example.com" in SOURCE_HOST:
+    if SOURCE_HOST == "source.example.com":
         print("Error: Please update the SOURCE_HOST and SOURCE_USER variables in this script.")
         return
 
