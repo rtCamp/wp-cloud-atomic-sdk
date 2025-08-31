@@ -11,7 +11,8 @@ API_KEY = os.environ.get("ATOMIC_API_KEY")
 CLIENT_ID = os.environ.get("ATOMIC_CLIENT_ID")
 
 # This script is designed to clean up the site created by the previous examples.
-SITE_DOMAIN = os.environ.get("SITE_DOMAIN") # Use the same domain
+# It also, accepts site domain from command line and fallbacks to .env
+SITE_DOMAIN = sys.argv[1] if len(sys.argv) > 1 else os.environ.get("SITE_DOMAIN")
 
 def poll_job_until_complete(job: Job, timeout=600, poll_interval=15):
     """
