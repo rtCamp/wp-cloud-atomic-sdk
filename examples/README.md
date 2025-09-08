@@ -200,7 +200,46 @@ Execute an operation across many or all of your sites at once.
 *   **Run:** `python examples/tasks/03_run_bulk_wp_cli_task.py`
 *   **Shows:** Creating a `run-wp-cli-command` task to execute a WP-CLI command on all sites and get results via webhook.
 
-## 🍃 Step 9: Explore Other Endpoints
+
+## ☁️ Step 9: Migrate a Site to WP.Cloud
+End-to-end examples to migrate an existing WordPress site from a remote host to a new Atomic site.
+
+Before you begin:
+- Ensure your `.env` is configured (see Getting Started above).
+- You will need SSH access to the source server (user + host). The scripts attempt to install a public key automatically; if that fails, you'll be shown the key to add manually to `~/.ssh/authorized_keys` on the source.
+
+### 1) Prepare Destination Site
+- **Run:** `python examples/migrations/01_prepare_destination_site.py`
+- **Configure:** Update `DESTINATION_DOMAIN`, `ADMIN_USER`, and `ADMIN_EMAIL` in the script to your desired values.
+- **Shows:**
+  - Creating a new empty destination site with `client.sites.create()` and meta `{"allow_site_migration": "true"}`.
+  - Polling the returned `Job` until it completes.
+  - Safe handling when the destination domain already exists.
+
+### 2) Create Migration and Install Key
+- **Run:** `python examples/migrations/02_create_migration_with_new_key.py`
+- **Configure:** Update `SOURCE_HOST` and `SOURCE_USER` in the script to match your source server.
+- **Shows:**
+  - Creating a migration with `client.migrations.create()` for the destination domain.
+  - Receiving an SSH public key (`ssh_id_pub`) to authorize on the source server.
+  - Auto-installing the key via SSH, with clear fallback instructions if it fails.
+  - Writing the `migration_id` to `migration_id.txt` for later steps.
+
+### 3) Run Preflight and Monitor
+- **Run:** `python examples/migrations/03_run_preflight_and_monitor.py`
+- **Shows:**
+  - Triggering preflight checks with `client.migrations.run_preflight()`.
+  - Polling the migration until `preflight-succeeded` or `preflight-failed` using `client.migrations.get()`.
+  - Clear next-step guidance on success.
+
+### 4) Start Migration and Monitor
+- **Run:** `python examples/migrations/04_start_migration_and_monitor.py`
+- **Shows:**
+  - Setting the migration to ready with `client.migrations.set_ready()`.
+  - Polling until `migration-succeeded` or `migration-failed`.
+  - Displaying the Response Ticket ID for audit/debugging.
+
+## 🍃 Step 10: Explore Other Endpoints
 ### 🌐 Manage Edge Cache
 *   **Run:** `python examples/edge_cache/01_manage_cache.py`
 *   **Shows:** Using the `client.edge_cache` client to check status, turn caching on/off, purge, and manage defensive (DDoS) mode.

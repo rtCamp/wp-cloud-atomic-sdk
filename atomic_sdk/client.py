@@ -17,6 +17,8 @@ from .api.sites import SitesClient
 from .api.ssh import SSHClient
 from .api.tasks import TasksClient
 from .api.utility import UtilityClient
+from .api.migrations import MigrationsClient
+from .api.response_tickets import ResponseTicketsClient
 
 
 class AtomicClient:
@@ -68,6 +70,8 @@ class AtomicClient:
         self.ssh = SSHClient(self._session, self.BASE_URL, self.client_id_or_name)
         self.tasks = TasksClient(self._session, self.BASE_URL, self.client_id_or_name)
         self.utility = UtilityClient(self._session, self.BASE_URL, self.client_id_or_name)
+        self.migrations = MigrationsClient(self._session, self.BASE_URL, self.client_id_or_name)
+        self.response_tickets = ResponseTicketsClient(self._session, self.BASE_URL, self.client_id_or_name)
 
         # Pass a reference of the main client to the sites client for job status checks
         self.sites._client = self
