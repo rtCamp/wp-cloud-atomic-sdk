@@ -102,6 +102,17 @@ Once your site exists, you can perform various management tasks.
     *   Retrying a failed SSL provisioning attempt with `client.sites.retry_ssl_provisioning()`.
     *   Managing HSTS settings like `includeSubDomains` with `client.sites.set_hsts_subdomain()`.
 
+### 🔐 Manage Custom SSL Certificates
+*   **Run:** `python examples/custom_certificates/01_install_certificate.py --cert <file> --key <file>`
+*   **Shows:**
+    *   Validating a certificate pair with `client.custom_certificates.validate()`.
+    *   Staging and activating in one step with `client.custom_certificates.stage_and_activate()`.
+*   **Run:** `python examples/custom_certificates/02_manage_certificate.py list`
+*   **Shows:**
+    *   Listing all certificates for a site.
+    *   Getting the currently active certificate with `active` subcommand.
+    *   Subcommands for `deactivate` and `delete` to manage specific certificate IDs.
+
 ### 🗃️ Access the Database
 *   **Run:** `python examples/sites/06_get_phpmyadmin_url.py`
 *   **Shows:**
