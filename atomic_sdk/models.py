@@ -10,7 +10,6 @@ def empty_str_to_none(v: Any) -> Optional[Any]:
         return None
     return v
 
-
 class Site(BaseModel):
     """
     Represents the detailed information for a single site.
@@ -37,7 +36,6 @@ class Site(BaseModel):
         if self.extra:
             return self.extra.get(key, default)
         return default
-
 
 class Job(BaseModel):
     """
@@ -99,7 +97,6 @@ class BackupJob(BaseModel):
 
 class Backup(BaseModel):
     """
-
     Represents a backup record for a site.
     """
     atomic_backup_id: str = Field(..., description="The unique identifier for the backup.")
@@ -134,3 +131,55 @@ class Task(BaseModel):
         if isinstance(v, str) and v == "":
             return None
         return v
+
+class MigrationCreationResponse(BaseModel):
+    """
+    Represents the immediate response after creating a new migration.
+    """
+    migration_id: int = Field(..., alias="migration-id")
+    # The public key is only returned if no private key was provided on creation
+    ssh_id_pub: Optional[str] = Field(None, alias="ssh-id-pub")
+
+    class Config:
+        populate_by_name = True
+
+class ResponseTicket(BaseModel):
+    """
+    Represents a response ticket used for monitoring migrations and preflights.
+    """
+    response_ticket_id: str = Field(..., alias="response-ticket-id")
+
+    class Config:
+        populate_by_name = True
+
+class Migration(BaseModel):
+    """
+    Represents the full details of a migration object.
+    Sensitive fields are redacted.
+    """
+    migration_id: Optional[int] = Field(None, alias="migration-id")
+    atomic_site_migration_id: str
+    atomic_site_id: str
+    created: str
+    updated: str
+    state: str
+    atomic_client_id: str
+    args: Dict[str, Any]
+
+    class Config:
+        populate_by_name = True
+
+    @property
+    def remote_host(self) -> Optional[str]:
+        """Extract remote host from args dictionary."""
+        return self.args.get("remote-host")
+
+    @property
+    def remote_user(self) -> Optional[str]:
+        """Extract remote user from args dictionary."""
+        return self.args.get("remote-user")
+
+    @property
+    def remote_domain(self) -> Optional[str]:
+        """Extract remote domain from args dictionary."""
+        return self.args.get("remote-domain")
