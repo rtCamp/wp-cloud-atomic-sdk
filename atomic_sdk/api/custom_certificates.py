@@ -160,20 +160,13 @@ class CustomCertificatesClient(ResourceClient):
         This fetches the list of certificates and returns the first one marked as active.
         Returns None if no active certificate is found.
         """
-        # Fetch a small batch, active certs should be prioritized or exist in the list
-        # We can filter by status='active' if the API correctly supports filtering by status.
-        # Assuming status='active' works as per previous implementation plan.
-        try:
-            result = self.list(site_id=site_id, domain=domain, status='active', limit=1)
-            certificates = result.get('certificates', [])
-            if certificates:
-                 # Double check is_active flag just in case
-                 cert = certificates[0]
-                 if cert.get('is_active'):
-                     return cert
-        except Exception:
-            pass
-            
+        result = self.list(site_id=site_id, domain=domain, status='active', limit=1)
+        certificates = result.get('certificates', [])
+        if certificates:
+            # Double check is_active flag just in case
+            cert = certificates[0]
+            if cert.get('is_active'):
+                return cert
         return None
 
     def list(
@@ -350,4 +343,4 @@ class CustomCertificatesClient(ResourceClient):
                 # Fallback: if delete fails, we can't do much more, but we swallow the delete error
                 # so the user sees the original activation error.
                 pass
-            raise e
+            raise
