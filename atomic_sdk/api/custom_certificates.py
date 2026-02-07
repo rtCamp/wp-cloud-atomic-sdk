@@ -303,8 +303,9 @@ class CustomCertificatesClient(ResourceClient):
 
         Args matches stage().
         
-        This method includes rollback logic: if activation fails, it attempts to
-        delete the staged certificate to prevent orphans.
+        This method includes rollback logic: if activation fails (either via exception
+        or via an `activated: false` response), it attempts to delete the staged
+        certificate to prevent orphans.
         """
         # Stage the certificate first
         stage_result = self.stage(
@@ -322,6 +323,14 @@ class CustomCertificatesClient(ResourceClient):
         if not certificate_id:
             raise RuntimeError("Failed to get certificate ID from staging response")
 
+        def _rollback() -> None:
+            """Attempt to delete the staged certificate."""
+            try:
+                self.delete(certificate_id=certificate_id, site_id=site_id, domain=domain)
+            except Exception:
+                # Swallow delete error so caller sees the original activation error
+                pass
+
         try:
             # Activate the staged certificate
             activate_result = self.activate(
@@ -331,16 +340,19 @@ class CustomCertificatesClient(ResourceClient):
                 domains=domains,
             )
 
+            # Check if activation was successful via response field
+            if not activate_result.get("activated", True):
+                _rollback()
+                raise RuntimeError(
+                    f"Activation returned false for certificate {certificate_id}. "
+                    "Staged certificate has been rolled back."
+                )
+
             # Include the certificate ID in the response for convenience
             activate_result["certificate_id"] = certificate_id
             return activate_result
             
         except Exception:
             # Rollback: Attempt to delete the staged certificate
-            try:
-                self.delete(certificate_id=certificate_id, site_id=site_id, domain=domain)
-            except Exception:
-                # Fallback: if delete fails, we can't do much more, but we swallow the delete error
-                # so the user sees the original activation error.
-                pass
+            _rollback()
             raise
