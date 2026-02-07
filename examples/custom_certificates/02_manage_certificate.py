@@ -1,15 +1,15 @@
 """
 Example: Manage Custom SSL Certificates
 
-This script allows you to list, deactivate, and delete custom SSL certificates.
+This script allows you to list certificates, get the active certificate, deactivate certificates, and delete custom SSL certificates.
 
 Usage:
-    python 02_manage_certificate.py [list|deactivate|delete] [--domain example.com] [--id CERT_ID]
+    python 02_manage_certificate.py [list|active|deactivate|delete] [--domain example.com] [--status {active,staged,all}] [--id CERT_ID] [--id-only]
 """
 
 import os
 import argparse
-import sys
+
 from dotenv import load_dotenv
 from atomic_sdk import AtomicClient, AtomicAPIError, NotFoundError
 
