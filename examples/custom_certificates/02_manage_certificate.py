@@ -75,14 +75,14 @@ def main():
             cert = client.custom_certificates.get_active(domain=domain)
             if cert:
                 cert_id = cert.get('ssl_custom_certificate_id')
-                if getattr(args, 'id_only', False):
+                if args.id_only:
                     print(cert_id)
                 else:
                     print(f"--- Getting active certificate for '{domain}' ---")
                     print(f"🟢 Active Certificate ID: {cert_id}")
                     print(f"Issued To: {cert.get('issued_to')}")
             else:
-                if not getattr(args, 'id_only', False):
+                if not args.id_only:
                     print(f"--- Getting active certificate for '{domain}' ---")
                     print("⚪ No active certificate found.")
 

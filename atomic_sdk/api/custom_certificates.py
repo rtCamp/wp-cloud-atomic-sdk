@@ -335,7 +335,7 @@ class CustomCertificatesClient(ResourceClient):
             activate_result["certificate_id"] = certificate_id
             return activate_result
             
-        except Exception as e:
+        except Exception:
             # Rollback: Attempt to delete the staged certificate
             try:
                 self.delete(certificate_id=certificate_id, site_id=site_id, domain=domain)
