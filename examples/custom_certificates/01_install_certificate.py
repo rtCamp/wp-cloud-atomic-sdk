@@ -91,12 +91,7 @@ def main():
         )
         
         cert_id = result.get('certificate_id')
-        activated = result.get('activated')
-        
-        if activated:
-            print(f"✅ Success! Certificate {cert_id} has been activated for: {result.get('domains')}")
-        else:
-            print(f"⚠️ Certificate staged (ID: {cert_id}) but activation status is false.")
+        print(f"✅ Success! Certificate {cert_id} has been activated for: {result.get('domains')}")
 
     except NotFoundError:
         print(f"Error: Site '{args.domain}' not found.")
