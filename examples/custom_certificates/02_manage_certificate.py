@@ -31,6 +31,7 @@ def main():
     # Active command
     active_parser = subparsers.add_parser('active', help='Get active certificate')
     active_parser.add_argument("--domain", default=DEFAULT_DOMAIN, help="Target domain")
+    active_parser.add_argument("--id-only", action="store_true", help="Only output the certificate ID (for scripting)")
 
     # Deactivate command
     deactivate_parser = subparsers.add_parser('deactivate', help='Deactivate a certificate')
@@ -71,13 +72,19 @@ def main():
                       f"Expires: {cert.get('expires_at')}")
 
         elif args.command == 'active':
-            print(f"--- Getting active certificate for '{domain}' ---")
             cert = client.custom_certificates.get_active(domain=domain)
             if cert:
-                print(f"🟢 Active Certificate ID: {cert.get('ssl_custom_certificate_id')}")
-                print(f"Issued To: {cert.get('issued_to')}")
+                cert_id = cert.get('ssl_custom_certificate_id')
+                if getattr(args, 'id_only', False):
+                    print(cert_id)
+                else:
+                    print(f"--- Getting active certificate for '{domain}' ---")
+                    print(f"🟢 Active Certificate ID: {cert_id}")
+                    print(f"Issued To: {cert.get('issued_to')}")
             else:
-                print("⚪ No active certificate found.")
+                if not getattr(args, 'id_only', False):
+                    print(f"--- Getting active certificate for '{domain}' ---")
+                    print("⚪ No active certificate found.")
 
         elif args.command == 'deactivate':
             print(f"--- Deactivating certificate ID {args.id} on '{domain}' ---")
