@@ -85,8 +85,15 @@ class MigrationsClient(ResourceClient):
             The raw response from the API.
         """
         endpoint = f"/migration/update/{migration_id}"
-        # Rename kwargs to match the API's expected snake-case-with-hyphens
-        payload = {key.replace('_', '-'): value for key, value in kwargs.items()}
+        # Rename kwargs to match the API's expected snake-case-with-hyphens.
+        # Drop None values so callers can safely pass `remote_pass=None` etc.
+        # to mean "leave this field untouched" — otherwise `requests` would
+        # form-encode the literal string "None" and overwrite the stored value.
+        payload = {
+            key.replace('_', '-'): value
+            for key, value in kwargs.items()
+            if value is not None
+        }
         return self._post(endpoint, data=payload)
 
     def run_preflight(self, migration_id: int) -> ResponseTicket:
