@@ -1,5 +1,5 @@
 import os
-from dotenv import load_dotenv
+from dotenv import load_dotenv # type: ignore
 from atomic_sdk import AtomicClient, AtomicAPIError, NotFoundError
 
 # --- Configuration ---
@@ -35,11 +35,14 @@ def main():
         # --- 1. Initiate the migration ---
         print(f"🚀 Creating migration for destination site '{DESTINATION_DOMAIN}'...")
 
+        # remote_domain is the hostname WP Cloud will rewrite from in the migrated
+        # database; for most setups it equals the source host. Override here if
+        # your source site is served under a different canonical domain.
         creation_response = client.migrations.create(
             domain=DESTINATION_DOMAIN,
             remote_host=SOURCE_HOST,
             remote_user=SOURCE_USER,
-            remote_domain="migration-src.rt.gw"
+            remote_domain=SOURCE_HOST,
         )
         migration_id = creation_response.migration_id
         public_key = creation_response.ssh_id_pub
@@ -86,7 +89,7 @@ def main():
         except subprocess.CalledProcessError as e:
             print("\n❌ Could not add public key automatically via SSH.")
             print("🛑 Error output:")
-            sys.stderr.write(e.stderr.decode() if e.stderr else str(e))
+            sys.stderr.write(e.stderr if e.stderr else str(e))
             print(f"⚠️ Please add the following public key manually to '~/.ssh/authorized_keys' for user '{SOURCE_USER}' on server '{SOURCE_HOST}'.")
             print("🔒 ----- BEGIN PUBLIC KEY -----\n")
             print(public_key)
