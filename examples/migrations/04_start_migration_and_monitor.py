@@ -1,6 +1,6 @@
 import os
 import time
-from dotenv import load_dotenv
+from dotenv import load_dotenv # type: ignore
 from atomic_sdk import AtomicClient, AtomicAPIError
 
 # --- Configuration ---
@@ -9,28 +9,62 @@ API_KEY = os.environ.get("ATOMIC_API_KEY")
 CLIENT_ID = os.environ.get("ATOMIC_CLIENT_ID")
 MIGRATION_ID_FILE = "migration_id.txt"
 
-def poll_migration_status(client, migration_id):
-    """Polls migration status until migration completes, printing logs on failure."""
+# Bounded poll: actual migration time scales with source site size.
+# 6h is a generous ceiling for the example; tune for your workload.
+POLL_INTERVAL_S = 20
+POLL_TIMEOUT_S = 6 * 60 * 60   # 6 hours
 
+
+def poll_migration_status(client, migration_id, ticket_id=None):
+    """
+    Poll the migration's ``state`` until it reaches a terminal value.
+
+    Returns one of ``"success"``, ``"failure"`` or ``"timeout"``. On failure,
+    the response ticket (if known) is fetched and printed for diagnostics.
+    """
     if isinstance(migration_id, str):
         migration_id = int(migration_id)
-    while True:
-        migration_response = client.migrations.get(migration_id)
 
-        # Access state directly from the Migration object
-        state = migration_response.state
-        print(f"⏳ Migration state: {state}")
-        print(f"  - Polling migration {migration_id}... current state: {state}")
+    deadline = time.monotonic() + POLL_TIMEOUT_S
+    last_state = None
+
+    while time.monotonic() < deadline:
+        migration = client.migrations.get(migration_id)
+        state = migration.state
+        if state != last_state:
+            print(f"⏳ Migration {migration_id} state: {state}")
+            last_state = state
 
         if state == "migration-succeeded":
             return "success"
-        elif state == "migration-failed":
+        if state == "migration-failed":
+            _print_failure_logs(client, ticket_id, label="Migration")
             return "failure"
 
-        time.sleep(20)
+        time.sleep(POLL_INTERVAL_S)
+
+    print(f"Timed out after {POLL_TIMEOUT_S}s waiting for migration to finish.")
+    _print_failure_logs(client, ticket_id, label="Migration (timeout)")
+    return "timeout"
+
+
+def _print_failure_logs(client, ticket_id, *, label):
+    """Best-effort dump of the response ticket payload to aid debugging."""
+    if not ticket_id:
+        return
+    try:
+        full = client.response_tickets.get_full(ticket_id=ticket_id)
+    except AtomicAPIError as e:
+        print(f"Could not fetch ticket {ticket_id} logs: {e}")
+        return
+    print(f"\n{label} response ticket {ticket_id} payload:")
+    print(full)
+
 
 def main():
-    if not API_KEY or not CLIENT_ID: return
+    if not API_KEY or not CLIENT_ID:
+        print("Error: Please set ATOMIC_API_KEY and ATOMIC_CLIENT_ID in your environment (or .env file).")
+        return
     if not os.path.exists(MIGRATION_ID_FILE):
         print(f"Error: '{MIGRATION_ID_FILE}' not found. Please run previous scripts first.")
         return
@@ -49,12 +83,13 @@ def main():
 
         print(f"⏳ Monitoring migration {migration_id}...")
 
-        final_status = poll_migration_status(client, migration_id)
+        final_status = poll_migration_status(client, migration_id, ticket_id=ticket_id)
 
         if final_status == "success":
             print(f"\n✅ Success! Migration {migration_id} completed successfully.")
         else:
-            print(f"\n❌ Failure. Please review the logs, update the migration, and re-run this script if needed.")
+            print(f"\n❌ Migration ended with status: {final_status}. "
+                  "Review the logs above for details.")
 
     except AtomicAPIError as e:
         print(f"❌ An error occurred: {e}")

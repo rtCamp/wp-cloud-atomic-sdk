@@ -9,13 +9,13 @@ class ResponseTicketsClient(ResourceClient):
     like site migrations.
     """
 
-    def get_summary(self, ticket_id: int) -> Dict[str, Any]:
+    def get_summary(self, ticket_id: str) -> Dict[str, Any]:
         """
         Gets a summary of the response ticket, including its current status.
         The status is of special relevance, being one of "success", "failure", or "running".
 
         Args:
-            ticket_id: The ID of the response ticket.
+            ticket_id: The ID of the response ticket (matches "ResponseTicket.response_ticket_id").
 
         Returns:
             A dictionary containing the summary of the ticket.
@@ -23,13 +23,13 @@ class ResponseTicketsClient(ResourceClient):
         endpoint = f"/response-ticket/get/summary/{ticket_id}"
         return self._get(endpoint)
 
-    def get_full(self, ticket_id: int) -> Dict[str, Any]:
+    def get_full(self, ticket_id: str) -> Dict[str, Any]:
         """
         Gets the full data attached to a response ticket, which may include
         detailed logs and results.
 
         Args:
-            ticket_id: The ID of the response ticket.
+            ticket_id: The ID of the response ticket (matches "ResponseTicket.response_ticket_id").
 
         Returns:
             A dictionary containing the full details of the ticket.

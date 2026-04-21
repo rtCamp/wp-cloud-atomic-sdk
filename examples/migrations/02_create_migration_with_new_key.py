@@ -56,12 +56,27 @@ def main():
         print("🔑 Attempting to install public key on source server via SSH...")
         print("="*60)
         import subprocess
-        import shlex
         import sys
-        key_escaped = public_key.replace('"', '\\"')
-        ssh_cmd = f"ssh {SOURCE_USER}@{SOURCE_HOST} 'mkdir -p ~/.ssh 2>/dev/null && chmod 700 ~/.ssh && printf \"%s\\n\" \"{key_escaped}\" >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys'"
+
+        # Pipe the key in via stdin so we never embed it in a shell-parsed string.
+        # SOURCE_USER / SOURCE_HOST go through argv (no shell=True), avoiding
+        # command-injection via the SSH target.
+        remote_cmd = (
+            "mkdir -p ~/.ssh 2>/dev/null && "
+            "chmod 700 ~/.ssh && "
+            "cat >> ~/.ssh/authorized_keys && "
+            "chmod 600 ~/.ssh/authorized_keys"
+        )
+        ssh_argv = ["ssh", f"{SOURCE_USER}@{SOURCE_HOST}", remote_cmd]
         try:
-            result = subprocess.run(ssh_cmd, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            result = subprocess.run(
+                ssh_argv,
+                input=public_key + "\n",
+                text=True,
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
             print(f"\n✅ Success! Public key was added to '~/.ssh/authorized_keys' for user '{SOURCE_USER}' on server '{SOURCE_HOST}'.")
             print("🔒 ----- BEGIN PUBLIC KEY -----\n")
             print(public_key)

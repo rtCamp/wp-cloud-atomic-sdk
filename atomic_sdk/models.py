@@ -140,8 +140,7 @@ class MigrationCreationResponse(BaseModel):
     # The public key is only returned if no private key was provided on creation
     ssh_id_pub: Optional[str] = Field(None, alias="ssh-id-pub")
 
-    class Config:
-        populate_by_name = True
+    model_config = ConfigDict(populate_by_name=True)
 
 class ResponseTicket(BaseModel):
     """
@@ -149,8 +148,7 @@ class ResponseTicket(BaseModel):
     """
     response_ticket_id: str = Field(..., alias="response-ticket-id")
 
-    class Config:
-        populate_by_name = True
+    model_config = ConfigDict(populate_by_name=True)
 
 class Migration(BaseModel):
     """
@@ -166,8 +164,7 @@ class Migration(BaseModel):
     atomic_client_id: str
     args: Dict[str, Any]
 
-    class Config:
-        populate_by_name = True
+    model_config = ConfigDict(populate_by_name=True)
 
     @property
     def remote_host(self) -> Optional[str]:
