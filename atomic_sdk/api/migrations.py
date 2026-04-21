@@ -1,4 +1,4 @@
-from typing import Optional, Dict, Any, Union
+from typing import Optional, Dict, Any
 
 from .base import ResourceClient
 from ..models import Migration, MigrationCreationResponse, ResponseTicket
