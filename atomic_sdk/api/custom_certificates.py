@@ -342,7 +342,6 @@ class CustomCertificatesClient(ResourceClient):
 
             # Check if activation was successful via response field
             if not activate_result.get("activated", True):
-                _rollback()
                 raise RuntimeError(
                     f"Activation returned false for certificate {certificate_id}. "
                     "Staged certificate has been rolled back."
