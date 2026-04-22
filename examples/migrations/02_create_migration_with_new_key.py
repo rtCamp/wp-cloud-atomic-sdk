@@ -24,7 +24,9 @@ def main():
     Step 2: Initiates a migration for the destination site and gets a public
     key that must be installed on the source server.
     """
-    if not API_KEY or not CLIENT_ID: return
+    if not API_KEY or not CLIENT_ID:
+        print("Error: Please set ATOMIC_API_KEY and ATOMIC_CLIENT_ID in your environment (or .env file).")
+        return
     if SOURCE_HOST == "source.example.com":
         print("Error: Please update the SOURCE_HOST and SOURCE_USER variables in this script.")
         return

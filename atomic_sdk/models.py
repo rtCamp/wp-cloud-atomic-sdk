@@ -158,8 +158,8 @@ class Migration(BaseModel):
     migration_id: Optional[int] = Field(None, alias="migration-id")
     atomic_site_migration_id: str
     atomic_site_id: str
-    created: str
-    updated: str
+    created: datetime
+    updated: datetime
     state: str
     atomic_client_id: str
     args: Dict[str, Any]
