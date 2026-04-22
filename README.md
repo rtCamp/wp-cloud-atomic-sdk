@@ -21,9 +21,9 @@ For more examples see the [`examples/`](./examples) directory.
 -   **Intelligent Helpers**: The SDK abstracts away complexities such as building form-data payloads, handling different SSH connection types, and managing API inconsistencies.
 
 This SDK provides clients for:
--   📂 **Sites**: Full lifecycle management.
+-   📂 **Sites**: Full lifecycle management, including the one-way `allow_ssh_migration` consent gate for incoming migrations.
 -   🗄️ **Backups**: Create, list, download, and delete backups.
--   🔑 **SSH**: Manage site-specific users, client-wide keys, and aliases.
+-   🔑 **SSH**: Manage site-specific users, client-wide keys, aliases, and reverse-lookup users by name.
 -   📊 **Metrics**: Query detailed performance and visitor analytics.
 -   🚀 **Tasks**: Run bulk operations across all your sites.
 -   🌐 **Edge Cache**: Control caching and DDoS protection.

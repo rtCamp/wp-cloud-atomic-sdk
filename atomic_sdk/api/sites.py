@@ -496,3 +496,30 @@ class SitesClient(ResourceClient):
             The job status string.
         """
         return self._get(f"/job-completion/{job_id}")
+
+    # --- Migration Consent ---
+
+    def allow_ssh_migration(self, site_id: Optional[int] = None, domain: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Mark a destination site as willing to accept an incoming SSH migration.
+
+        DESTRUCTIVE & ONE-WAY. The platform will not create a migration into a
+        site until this flag is set. Once set it cannot be unset, and when the
+        migration runs it will OVERWRITE the destination site's files and
+        database with the source's content.
+
+        Only call this on a freshly-created destination site that exists for
+        the sole purpose of receiving a migration.
+
+        Args:
+            site_id: The Atomic site ID.
+            domain: The domain name of the site.
+
+        Returns:
+            A dict with key ``ready_for_migration`` (bool). ``True`` on success.
+            ``False`` is returned by the API when the site already has a
+            migration attached and a fresh consent is no longer applicable.
+        """
+        _, identifier = self._get_service_and_identifier(site_id, domain)
+        endpoint = f"/site-allow-ssh-migration/{identifier}"
+        return self._post(endpoint)

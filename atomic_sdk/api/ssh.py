@@ -260,3 +260,26 @@ class SSHClient(ResourceClient):
         endpoint = f"/client-authorized-keys/{self._client_id_or_name}/remove/{key_id}"
         # The API docs show GET for this, which we will follow.
         return self._get(endpoint)
+
+    # --- Reverse Lookup ---
+
+    def get_user(self, username: str) -> Dict[str, Any]:
+        """
+        Reverse lookup an SSH/SFTP user by username.
+
+        Given a username, returns which site owns it together with creation and
+        last-updated timestamps. This is the inverse of :meth:`list_users`,
+        which lists usernames for a known site.
+
+        Args:
+            username: The SSH/SFTP username to look up.
+
+        Returns:
+            A dict with keys ``atomic_site_id`` (int), ``user`` (str),
+            ``created`` (str timestamp) and ``last_updated`` (str timestamp).
+
+        Raises:
+            NotFoundError: If no user with that username exists.
+        """
+        endpoint = f"/get-ssh-user/{username}"
+        return self._get(endpoint)
