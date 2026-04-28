@@ -24,7 +24,7 @@ class TasksClient(ResourceClient):
     def create(
         self,
         task_type: Literal["software", "site-find-files", "run-wp-cli-command"],
-        send_webhook_for: Literal["all", "success", "failure", "none"] = "none",
+        send_webhook_for: Literal["all", "success", "failure", "none"] = "all",
         software_actions: Optional[Dict[str, str]] = None,
         file_pattern: Optional[str] = None,
         wp_cli_args: Optional[List[str]] = None,
@@ -136,7 +136,7 @@ class TasksClient(ResourceClient):
         *,
         site_run_list: Optional[List[int]] = None,
         site_count_limit: Optional[int] = None,
-        send_webhook_for: WebhookCondition = "none",
+        send_webhook_for: WebhookCondition = "all",
     ) -> TaskCreationResponse:
         """
         Creates a bulk 'software' task that applies plugin/theme actions across
@@ -174,7 +174,7 @@ class TasksClient(ResourceClient):
         *,
         site_run_list: Optional[List[int]] = None,
         site_count_limit: Optional[int] = None,
-        send_webhook_for: WebhookCondition = "none",
+        send_webhook_for: WebhookCondition = "all",
     ) -> TaskCreationResponse:
         """
         Creates a bulk 'site-find-files' task that searches every client site
@@ -245,7 +245,7 @@ class TasksClient(ResourceClient):
             *,
             site_run_list: Optional[List[int]] = None,
             site_count_limit: Optional[int] = None,
-            send_webhook_for: WebhookCondition = "none",
+            send_webhook_for: WebhookCondition = "all",
     ):
         """
         Creates a bulk 'wpcloud-scan' task that runs a WPCloud scan on
