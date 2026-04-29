@@ -27,6 +27,7 @@ This SDK provides clients for:
 -   📊 **Metrics**: Query detailed performance and visitor analytics.
 -   🚀 **Tasks**: Run bulk operations across all your sites.
 -   🌐 **Edge Cache**: Control caching and DDoS protection.
+-   🔐 **Custom SSL Certificates**: Stage, activate, and manage your own SSL certificates.
 -   ⚙️ **Servers**: Get information on available datacenters and PHP versions.
 -   👤 **Client**: Manage account-wide settings like webhooks.
 -   ✉️ **Email**: Check the email sending blocklist.

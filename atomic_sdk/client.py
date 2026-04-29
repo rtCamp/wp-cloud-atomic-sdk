@@ -9,6 +9,7 @@ else:
 
 from .api.backups import BackupsClient
 from .api.client import ClientClient
+from .api.custom_certificates import CustomCertificatesClient
 from .api.edge_cache import EdgeCacheClient
 from .api.email import EmailClient
 from .api.metrics import MetricsClient
@@ -60,6 +61,7 @@ class AtomicClient:
         # Instantiate and attach all the resource-specific clients
         self.backups = BackupsClient(self._session, self.BASE_URL, self.client_id_or_name)
         self.client = ClientClient(self._session, self.BASE_URL, self.client_id_or_name)
+        self.custom_certificates = CustomCertificatesClient(self._session, self.BASE_URL, self.client_id_or_name)
         self.edge_cache = EdgeCacheClient(self._session, self.BASE_URL, self.client_id_or_name)
         self.email = EmailClient(self._session, self.BASE_URL, self.client_id_or_name)
         self.metrics = MetricsClient(self._session, self.BASE_URL, self.client_id_or_name)
