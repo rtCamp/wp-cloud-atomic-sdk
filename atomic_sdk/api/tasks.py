@@ -246,7 +246,7 @@ class TasksClient(ResourceClient):
         site_run_list: Optional[List[int]] = None,
         site_count_limit: Optional[int] = None,
         send_webhook_for: WebhookCondition = "all",
-    ):
+    ) -> TaskCreationResponse:
         """
         Creates a bulk 'wpcloud-scan' task that runs a WPCloud scan on
         every client site.
