@@ -24,7 +24,7 @@ class TasksClient(ResourceClient):
     def create(
         self,
         task_type: Literal["software", "site-find-files", "run-wp-cli-command"],
-        send_webhook_for: Literal["all", "success", "failure", "none"] = "all",
+        send_webhook_for: Literal["all", "success", "failure", "none"] = "none",
         software_actions: Optional[Dict[str, str]] = None,
         file_pattern: Optional[str] = None,
         wp_cli_args: Optional[List[str]] = None,
@@ -89,7 +89,7 @@ class TasksClient(ResourceClient):
             A list of (key, value) tuples suitable for form encoding.
         """
         payload: List[Tuple[str, str]] = [("send_webhook_for", send_webhook_for)]
-        if site_count_limit:
+        if site_count_limit is not None:
             payload.append(("site_count_limit", str(site_count_limit)))
         if site_run_list:
             for site_id in site_run_list:
@@ -240,12 +240,12 @@ class TasksClient(ResourceClient):
 
 
     def create_wpcloud_scan(
-            self,
-            scan_type: Literal["wpscan", "pnt-versions"],
-            *,
-            site_run_list: Optional[List[int]] = None,
-            site_count_limit: Optional[int] = None,
-            send_webhook_for: WebhookCondition = "all",
+        self,
+        scan_type: Literal["wpscan", "pnt-versions"],
+        *,
+        site_run_list: Optional[List[int]] = None,
+        site_count_limit: Optional[int] = None,
+        send_webhook_for: WebhookCondition = "all",
     ):
         """
         Creates a bulk 'wpcloud-scan' task that runs a WPCloud scan on
