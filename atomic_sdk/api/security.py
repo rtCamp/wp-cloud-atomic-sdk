@@ -1,0 +1,202 @@
+"""
+Client for managing site-level firewall rules (Security resource).
+
+The WP Cloud `firewall-rules` API controls **egress** (outbound) traffic from a
+site's PHP workers. Typical use cases include allow-listing an external MySQL
+host or third-party API, or denying outbound SMTP. It is not a WAF, and it does
+not control SSH ingress (see `client.client.set_meta('client_ssh_firewall', ...)`
+for that surface).
+"""
+
+from typing import Optional, List, Dict, Any, Union, Literal
+
+from .base import ResourceClient
+
+
+class SecurityClient(ResourceClient):
+    """
+    A client for managing a site's egress firewall rules.
+
+    Each rule allows or denies outbound traffic from the site's PHP workers to
+    a specific destination on a given protocol/port. Rules are evaluated
+    server-side; the order and precedence are controlled by the platform.
+    """
+
+    def _get_identifier(
+        self, site_id: Optional[int] = None, domain: Optional[str] = None
+    ) -> Union[int, str]:
+        """Internal helper to get the site identifier for endpoints in this group."""
+        if domain:
+            return domain
+        if site_id:
+            return site_id
+        raise ValueError("You must provide either a 'site_id' or a 'domain'.")
+
+    def list_rules(
+        self,
+        site_id: Optional[int] = None,
+        domain: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        """
+        List all firewall rules configured for a site.
+
+        Args:
+            site_id: The Atomic site ID.
+            domain: The domain name of the site.
+
+        Returns:
+            A list of rule dictionaries, each containing `rule_id`, `direction`,
+            `action`, `protocol`, `port`, and `destination`.
+        """
+        identifier = self._get_identifier(site_id, domain)
+        endpoint = f"/firewall-rules/{identifier}/list"
+        result = self._get(endpoint)
+        # The API returns a list under `data`; `_get` yields `{}` when `data` is
+        # missing, so normalise to an empty list for consistent iteration.
+        if isinstance(result, list):
+            return result
+        return []
+
+    def add_rule(
+        self,
+        action: Literal["allow", "deny"],
+        protocol: Literal["tcp", "udp"],
+        port: int,
+        destination: str,
+        site_id: Optional[int] = None,
+        domain: Optional[str] = None,
+        direction: Literal["egress"] = "egress",
+    ) -> Dict[str, Any]:
+        """
+        Add a firewall rule to a site.
+
+        Args:
+            action: Whether to `allow` or `deny` traffic matching the rule.
+            protocol: Transport protocol for the rule (`tcp` or `udp`).
+            port: Destination port (1-65535).
+            destination: IPv4/IPv6 address or CIDR range
+                         (e.g. `10.20.30.40/32`, `2001:db8::/32`).
+            site_id: The Atomic site ID.
+            domain: The domain name of the site.
+            direction: Traffic direction. Only `egress` is supported by the API.
+
+        Returns:
+            A dictionary describing the created rule (same shape as a list row),
+            including the newly assigned `rule_id`.
+        """
+        if not isinstance(port, int) or isinstance(port, bool):
+            raise ValueError("'port' must be an integer between 1 and 65535.")
+        if not 1 <= port <= 65535:
+            raise ValueError("'port' must be between 1 and 65535.")
+        if not destination:
+            raise ValueError("'destination' must be a non-empty IP address or CIDR range.")
+
+        identifier = self._get_identifier(site_id, domain)
+        endpoint = f"/firewall-rules/{identifier}/add"
+
+        data: Dict[str, Any] = {
+            "direction": direction,
+            "action": action,
+            "protocol": protocol,
+            "port": port,
+            "destination": destination,
+        }
+        return self._post(endpoint, data=data)
+
+    def remove_rule(
+        self,
+        rule_id: int,
+        site_id: Optional[int] = None,
+        domain: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Remove a firewall rule from a site.
+
+        Args:
+            rule_id: The ID of the rule to remove (from `list_rules()` /
+                     `add_rule()`).
+            site_id: The Atomic site ID.
+            domain: The domain name of the site.
+
+        Returns:
+            An empty dictionary on success.
+        """
+        identifier = self._get_identifier(site_id, domain)
+        endpoint = f"/firewall-rules/{identifier}/remove"
+        return self._post(endpoint, data={"rule_id": rule_id})
+
+    def find_rule(
+        self,
+        site_id: Optional[int] = None,
+        domain: Optional[str] = None,
+        rule_id: Optional[int] = None,
+        destination: Optional[str] = None,
+        port: Optional[int] = None,
+        protocol: Optional[Literal["tcp", "udp"]] = None,
+        action: Optional[Literal["allow", "deny"]] = None,
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Convenience helper that returns the first rule matching all supplied
+        filters, or `None` if no rule matches. Filters are AND-combined.
+
+        The API has no "get one" endpoint, so this performs a `list_rules()`
+        call and filters client-side.
+
+        Args:
+            site_id: The Atomic site ID.
+            domain: The domain name of the site.
+            rule_id: Match by rule ID.
+            destination: Match by destination IP/CIDR (exact string match).
+            port: Match by port.
+            protocol: Match by protocol (`tcp` or `udp`).
+            action: Match by action (`allow` or `deny`).
+
+        Returns:
+            The first matching rule dictionary, or `None` if none match.
+        """
+        if rule_id is None and destination is None and port is None \
+                and protocol is None and action is None:
+            raise ValueError("At least one filter (rule_id, destination, port, protocol, action) must be provided.")
+
+        rules = self.list_rules(site_id=site_id, domain=domain)
+        for rule in rules:
+            if rule_id is not None and rule.get("rule_id") != rule_id:
+                continue
+            if destination is not None and rule.get("destination") != destination:
+                continue
+            if port is not None and rule.get("port") != port:
+                continue
+            if protocol is not None and rule.get("protocol") != protocol:
+                continue
+            if action is not None and rule.get("action") != action:
+                continue
+            return rule
+        return None
+
+    def clear_rules(
+        self,
+        site_id: Optional[int] = None,
+        domain: Optional[str] = None,
+    ) -> int:
+        """
+        Remove every firewall rule from a site.
+
+        ⚠️ Destructive: this deletes all rules in one shot, with no confirmation.
+        Useful for tearing down a test environment.
+
+        Args:
+            site_id: The Atomic site ID.
+            domain: The domain name of the site.
+
+        Returns:
+            The number of rules removed.
+        """
+        rules = self.list_rules(site_id=site_id, domain=domain)
+        removed = 0
+        for rule in rules:
+            rid = rule.get("rule_id")
+            if rid is None:
+                continue
+            self.remove_rule(rule_id=rid, site_id=site_id, domain=domain)
+            removed += 1
+        return removed
