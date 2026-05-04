@@ -95,9 +95,9 @@ class CronClient(ResourceClient):
             ValueError: If ``schedule`` or ``command`` is empty, or if neither
                 ``site_id`` nor ``domain`` is supplied.
         """
-        if not schedule:
+        if not schedule or not schedule.strip():
             raise ValueError("'schedule' must not be empty.")
-        if not command:
+        if not command or not command.strip():
             raise ValueError("'command' must not be empty.")
 
         identifier = self._get_identifier(site_id, domain)
@@ -136,7 +136,8 @@ class CronClient(ResourceClient):
         Find a single cron entry by ``cron_id`` or ``command`` (client-side filter).
 
         Calls :meth:`list` and returns the first matching entry, or ``None`` if
-        no match is found.
+        no match is found. When both filters are supplied, both must match the
+        same entry.
 
         Args:
             cron_id: The cron entry ID to search for.
@@ -155,9 +156,9 @@ class CronClient(ResourceClient):
 
         entries = self.list(site_id=site_id, domain=domain)
         for entry in entries:
-            if cron_id is not None and entry.get("cron_id") == cron_id:
-                return entry
-            if command and command in entry.get("command", ""):
+            cron_id_matches = cron_id is None or entry.get("cron_id") == cron_id
+            command_matches = not command or command in entry.get("command", "")
+            if cron_id_matches and command_matches:
                 return entry
         return None
 

@@ -13,7 +13,7 @@ Usage:
 
 import os
 import argparse
-from dotenv import load_dotenv
+from dotenv import load_dotenv # type: ignore
 from atomic_sdk import AtomicClient, AtomicAPIError, NotFoundError
 
 # Load environment variables
@@ -44,6 +44,8 @@ def main():
     target = f"domain={domain}" if domain else f"site_id={site_id}"
     print(f"--- Initializing AtomicClient (target: {target}) ---")
     client = AtomicClient(api_key=API_KEY, client_id_or_name=CLIENT_ID)
+    new_cron_id = None
+    removed = False
 
     try:
         # 1. List existing cron entries
@@ -78,6 +80,7 @@ def main():
         # 4. Remove the entry
         print("\n--- Step 4: Remove the cron entry ---")
         client.cron.remove(cron_id=new_cron_id, site_id=site_id, domain=domain)
+        removed = True
         print(f"✅ Removed cron entry cron_id={new_cron_id}")
 
         # Confirm removal
@@ -93,6 +96,16 @@ def main():
         print(f"API Error: {e}")
     except Exception as e:
         print(f"Unexpected Error: {e}")
+    finally:
+        if new_cron_id is not None and not removed:
+            try:
+                print(f"\n--- Cleanup: Remove cron entry cron_id={new_cron_id} ---")
+                client.cron.remove(cron_id=new_cron_id, site_id=site_id, domain=domain)
+                print(f"✅ Cleanup removed cron entry cron_id={new_cron_id}")
+            except AtomicAPIError as e:
+                print(f"Cleanup API Error: {e}")
+            except Exception as e:
+                print(f"Cleanup Unexpected Error: {e}")
 
 
 if __name__ == "__main__":
