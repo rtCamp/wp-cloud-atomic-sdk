@@ -8,6 +8,7 @@ not control SSH ingress (see `client.client.set_meta('client_ssh_firewall', ...)
 for that surface).
 """
 
+import ipaddress
 from typing import Optional, List, Dict, Any, Union, Literal
 
 from .base import ResourceClient
@@ -50,12 +51,7 @@ class SecurityClient(ResourceClient):
         """
         identifier = self._get_identifier(site_id, domain)
         endpoint = f"/firewall-rules/{identifier}/list"
-        result = self._get(endpoint)
-        # The API returns a list under `data`; `_get` yields `{}` when `data` is
-        # missing, so normalise to an empty list for consistent iteration.
-        if isinstance(result, list):
-            return result
-        return []
+        return self._get(endpoint)
 
     def add_rule(
         self,
@@ -90,6 +86,16 @@ class SecurityClient(ResourceClient):
             raise ValueError("'port' must be between 1 and 65535.")
         if not destination:
             raise ValueError("'destination' must be a non-empty IP address or CIDR range.")
+        try:
+            # Accepts both bare IPs (`10.20.30.40`) and CIDR ranges
+            # (`10.20.30.40/32`, `2001:db8::/32`). `strict=False` allows host
+            # bits in the address portion of a CIDR.
+            ipaddress.ip_network(destination, strict=False)
+        except (ValueError, TypeError) as exc:
+            raise ValueError(
+                f"'destination' must be a valid IPv4/IPv6 address or CIDR range "
+                f"(got {destination!r}): {exc}"
+            ) from exc
 
         identifier = self._get_identifier(site_id, domain)
         endpoint = f"/firewall-rules/{identifier}/add"
@@ -181,7 +187,12 @@ class SecurityClient(ResourceClient):
         """
         Remove every firewall rule from a site.
 
-        ⚠️ Destructive: this deletes all rules in one shot, with no confirmation.
+        ⚠️ Destructive: this issues one `remove_rule()` request per rule and
+        is **not atomic**. If a removal fails partway through, iteration stops
+        and any rules already removed stay removed; the exception from the
+        failed call propagates to the caller. The API has no bulk-delete
+        endpoint, so a per-rule loop is the only available primitive.
+
         Useful for tearing down a test environment.
 
         Args:
@@ -189,7 +200,7 @@ class SecurityClient(ResourceClient):
             domain: The domain name of the site.
 
         Returns:
-            The number of rules removed.
+            The number of rules successfully removed before iteration ended.
         """
         rules = self.list_rules(site_id=site_id, domain=domain)
         removed = 0
