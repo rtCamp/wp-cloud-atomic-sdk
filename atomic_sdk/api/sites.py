@@ -1,7 +1,7 @@
 from typing import List, Optional, Literal, Dict, Any, Union
 
 from .base import ResourceClient
-from ..exceptions import InvalidRequestError
+from ..exceptions import AtomicAPIError, InvalidRequestError
 from ..models import Job, Site
 
 
@@ -9,6 +9,21 @@ class SitesClient(ResourceClient):
     """
     A client for interacting with the Sites and site-management endpoints.
     """
+
+    def _parse_job(self, response_data: Any) -> Job:
+        """Parse a job-style response, raising AtomicAPIError on shape mismatch."""
+        if not isinstance(response_data, dict) or "job_id" not in response_data:
+            raise AtomicAPIError(
+                message=(
+                    "Expected a job response (dict with 'job_id'), "
+                    f"got {type(response_data).__name__}: {response_data!r}"
+                ),
+                status_code=200,
+            )
+
+        job = Job.parse_obj(response_data)
+        job._client = self._client
+        return job
 
     # --- Helper for Log Payloads ---
     def _build_log_payload(self, data: Dict[str, Any]) -> Dict[str, Any]:
@@ -121,10 +136,7 @@ class SitesClient(ResourceClient):
 
         endpoint = f"/create-site/{self._client_id_or_name}"
         response_data = self._post(endpoint, data=payload)
-
-        job = Job.parse_obj(response_data)
-        job._client = self._client
-        return job
+        return self._parse_job(response_data)
 
     def delete(self, site_id: Optional[int] = None, domain: Optional[str] = None) -> Job:
         """
@@ -140,10 +152,7 @@ class SitesClient(ResourceClient):
         service, identifier = self._get_service_and_identifier(site_id, domain)
         endpoint = f"/delete-site/{service}/{identifier}"
         response_data = self._post(endpoint)
-
-        job = Job.parse_obj(response_data)
-        job._client = self._client
-        return job
+        return self._parse_job(response_data)
 
     def update_domain(self, new_domain: str, site_id: Optional[int] = None, domain: Optional[str] = None, keep_old_domain: bool = False) -> Job:
         """
@@ -163,10 +172,7 @@ class SitesClient(ResourceClient):
         if keep_old_domain:
             endpoint += "/keep"
         response_data = self._post(endpoint)
-
-        job = Job.parse_obj(response_data)
-        job._client = self._client
-        return job
+        return self._parse_job(response_data)
 
     # --- Domain and DNS Management ---
 
@@ -260,10 +266,7 @@ class SitesClient(ResourceClient):
         _, identifier = self._get_service_and_identifier(site_id, domain)
         endpoint = f"/site-manage-software/atomic/{identifier}"
         response_data = self._post(endpoint, data=software_actions)
-
-        job = Job.parse_obj(response_data)
-        job._client = self._client
-        return job
+        return self._parse_job(response_data)
 
     def set_wordpress_version(self, version: Literal["latest", "previous", "beta"], site_id: Optional[int] = None, domain: Optional[str] = None) -> Job:
         """
@@ -281,9 +284,7 @@ class SitesClient(ResourceClient):
         _, identifier = self._get_service_and_identifier(site_id, domain)
         endpoint = f"/site-wordpress-version/{identifier}/{version}"
         response_data = self._post(endpoint)
-        job = Job.parse_obj(response_data)
-        job._client = self._client
-        return job
+        return self._parse_job(response_data)
 
     def update_options(self, options: dict, site_id: Optional[int] = None, domain: Optional[str] = None) -> Job:
         """
@@ -303,9 +304,7 @@ class SitesClient(ResourceClient):
         _, identifier = self._get_service_and_identifier(site_id, domain)
         endpoint = f"/update-site-options/atomic/{identifier}"
         response_data = self._post(endpoint, data={'options': options})
-        job = Job.parse_obj(response_data)
-        job._client = self._client
-        return job
+        return self._parse_job(response_data)
 
     def update_persistent_data(self, data_to_update: Dict[str, Any], site_id: Optional[int] = None, domain: Optional[str] = None) -> Job:
         """
@@ -328,9 +327,7 @@ class SitesClient(ResourceClient):
             for action, value in actions.items():
                 payload[f"data[{key}][{action}]"] = value
         response_data = self._post(endpoint, data=payload)
-        job = Job.parse_obj(response_data)
-        job._client = self._client
-        return job
+        return self._parse_job(response_data)
 
     # --- Site Metadata and Utilities ---
 
@@ -401,9 +398,7 @@ class SitesClient(ResourceClient):
         _, identifier = self._get_service_and_identifier(site_id, domain)
         endpoint = f"/reset-db-password/atomic/{identifier}"
         response_data = self._post(endpoint)
-        job = Job.parse_obj(response_data)
-        job._client = self._client
-        return job
+        return self._parse_job(response_data)
 
     # --- SSL Management ---
 
