@@ -212,6 +212,14 @@ Execute an operation across many or all of your sites at once.
 *   **Shows:** Creating a `run-wp-cli-command` task to execute a WP-CLI command on all sites and get results via webhook.
 
 ## 🍃 Step 9: Explore Other Endpoints
+### ⏱️ Manage Cron Entries
+*   **Run:** `python examples/cron/01_manage_cron.py [--domain example.com | --site-id 12345]`
+*   **Shows:**
+    *   Listing all cron entries with `client.cron.list()`.
+    *   Adding a new entry with `client.cron.add()` using a named schedule.
+    *   Finding a specific entry with `client.cron.find()`.
+    *   Removing an entry with `client.cron.remove()`.
+
 ### 🌐 Manage Edge Cache
 *   **Run:** `python examples/edge_cache/01_manage_cache.py`
 *   **Shows:** Using the `client.edge_cache` client to check status, turn caching on/off, purge, and manage defensive (DDoS) mode.
