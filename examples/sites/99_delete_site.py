@@ -11,7 +11,8 @@ API_KEY = os.environ.get("ATOMIC_API_KEY")
 CLIENT_ID = os.environ.get("ATOMIC_CLIENT_ID")
 
 # This script is designed to clean up the site created by the previous examples.
-SITE_DOMAIN = os.environ.get("SITE_DOMAIN") # Use the same domain
+# It also, accepts site domain from command line and fallbacks to .env
+SITE_DOMAIN = sys.argv[1] if len(sys.argv) > 1 else os.environ.get("SITE_DOMAIN")
 
 def poll_job_until_complete(job: Job, timeout=600, poll_interval=15):
     """
@@ -21,8 +22,13 @@ def poll_job_until_complete(job: Job, timeout=600, poll_interval=15):
     start = time.time()
     while True:
         status = job.status()
-        print(f"🔄  - Job status: {status['_status']}")
-        job_state = status["_status"] if isinstance(status, dict) and "_status" in status else status
+        job_state = None
+        if isinstance(status, dict):
+            job_state = status.get("_status", None)
+            print(f"🔄  - Job status: {job_state}")
+        else:
+            job_state = status
+            print(f"🔄  - Job status: {job_state}")
         if job_state in ("success", "failed", "error"):
             return job_state
         if time.time() - start > timeout:
@@ -48,14 +54,36 @@ def main():
         site_id = site.atomic_site_id
         print(f"📄 Found site ID: {site_id}. Preparing for deletion.")
 
-        # --- 2. User Confirmation ---
+        # --- 2. Remove ondemand backups before site deletion ---
+        print("\n🔎 --- Checking for ondemand backups to remove before site deletion ---")
+        try:
+            all_backups = client.backups.list(site_id=site_id)
+            ondemand_backups = [b for b in all_backups if b.type in ['ondemand-db', 'ondemand-fs']]
+            if ondemand_backups:
+                print(f"⚠️ Found {len(ondemand_backups)} ondemand backup(s) for this site.")
+                for backup in sorted(ondemand_backups, key=lambda b: b.backup_timestamp, reverse=True):
+                    backup_id = backup.atomic_backup_id
+                    backup_type = backup.type
+                    confirm_backup = input(f"Are you sure you want to delete ondemand backup {backup_id} (type: {backup_type})? [y/N]: ")
+                    if confirm_backup.lower() == 'y':
+                        print(f"🗑️   - Deleting ondemand backup {backup_id}...")
+                        delete_request = client.backups.delete(site_id=site_id, backup_id=int(backup_id))
+                        print(f"  - Deletion requested. Request ID: {delete_request.request_id}")
+                    else:
+                        print(f"🚫 Skipped deletion of backup {backup_id}.")
+            else:
+                print("✅ No ondemand backups found for this site.")
+        except Exception as e:
+            print(f"❌ Error while checking/removing ondemand backups: {e}")
+
+        # --- 3. User Confirmation ---
         # This is a critical safety measure for a destructive operation.
         confirm = input(f"Are you sure you want to delete site {site_id} ({SITE_DOMAIN})? [y/N]: ")
         if confirm.lower() != 'y':
             print("🚫 Deletion cancelled by user.")
             sys.exit(0)
 
-        # --- 3. Execute Deletion Job ---
+        # --- 4. Execute Deletion Job ---
         print("\n📡 --- Sending deletion request ---")
         delete_job: Job = client.sites.delete(site_id=site_id)
 

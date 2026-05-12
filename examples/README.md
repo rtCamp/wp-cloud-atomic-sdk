@@ -102,6 +102,17 @@ Once your site exists, you can perform various management tasks.
     *   Retrying a failed SSL provisioning attempt with `client.sites.retry_ssl_provisioning()`.
     *   Managing HSTS settings like `includeSubDomains` with `client.sites.set_hsts_subdomain()`.
 
+### 🔐 Manage Custom SSL Certificates
+*   **Run:** `python examples/custom_certificates/01_install_certificate.py --cert <file> --key <file>`
+*   **Shows:**
+    *   Validating a certificate pair with `client.custom_certificates.validate()`.
+    *   Staging and activating in one step with `client.custom_certificates.stage_and_activate()`.
+*   **Run:** `python examples/custom_certificates/02_manage_certificate.py list`
+*   **Shows:**
+    *   Listing all certificates for a site.
+    *   Getting the currently active certificate with `active` subcommand.
+    *   Subcommands for `deactivate` and `delete` to manage specific certificate IDs.
+
 ### 🗃️ Access the Database
 *   **Run:** `python examples/sites/06_get_phpmyadmin_url.py`
 *   **Shows:**
@@ -240,6 +251,14 @@ Before you begin:
   - Displaying the Response Ticket ID for audit/debugging.
 
 ## 🍃 Step 10: Explore Other Endpoints
+### ⏱️ Manage Cron Entries
+*   **Run:** `python examples/cron/01_manage_cron.py [--domain example.com | --site-id 12345]`
+*   **Shows:**
+    *   Listing all cron entries with `client.cron.list()`.
+    *   Adding a new entry with `client.cron.add()` using a named schedule.
+    *   Finding a specific entry with `client.cron.find()`.
+    *   Removing an entry with `client.cron.remove()`.
+
 ### 🌐 Manage Edge Cache
 *   **Run:** `python examples/edge_cache/01_manage_cache.py`
 *   **Shows:** Using the `client.edge_cache` client to check status, turn caching on/off, purge, and manage defensive (DDoS) mode.
