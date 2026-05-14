@@ -73,7 +73,7 @@ class SitesClient(ResourceClient):
             endpoint += "/extra"
 
         response_data = self._get(endpoint)
-        return Site.parse_obj(response_data)
+        return Site.model_validate(response_data)
 
     def create(self, admin_user: str, admin_email: str, domain_name: Optional[str] = None, **kwargs) -> Job:
         """
@@ -122,7 +122,7 @@ class SitesClient(ResourceClient):
         endpoint = f"/create-site/{self._client_id_or_name}"
         response_data = self._post(endpoint, data=payload)
 
-        job = Job.parse_obj(response_data)
+        job = Job.model_validate(response_data)
         job._client = self._client
         return job
 
@@ -141,11 +141,11 @@ class SitesClient(ResourceClient):
         endpoint = f"/delete-site/{service}/{identifier}"
         response_data = self._post(endpoint)
 
-        job = Job.parse_obj(response_data)
+        job = Job.model_validate(response_data)
         job._client = self._client
         return job
 
-    def update_domain(self, new_domain: str, site_id: Optional[int] = None, domain: Optional[str] = None, keep_old_domain: bool = False) -> Job:
+    def update_domain(self, new_domain: str, site_id: Optional[int] = None, domain: Optional[str] = None, keep_old_domain: bool = False) -> Job | None:
         """
         Updates a site's primary domain. This is an asynchronous operation.
 
@@ -164,7 +164,7 @@ class SitesClient(ResourceClient):
             endpoint += "/keep"
         response_data = self._post(endpoint)
 
-        job = Job.parse_obj(response_data)
+        job = Job.model_validate(response_data)
         job._client = self._client
         return job
 
@@ -261,7 +261,7 @@ class SitesClient(ResourceClient):
         endpoint = f"/site-manage-software/atomic/{identifier}"
         response_data = self._post(endpoint, data=software_actions)
 
-        job = Job.parse_obj(response_data)
+        job = Job.model_validate(response_data)
         job._client = self._client
         return job
 
@@ -281,7 +281,7 @@ class SitesClient(ResourceClient):
         _, identifier = self._get_service_and_identifier(site_id, domain)
         endpoint = f"/site-wordpress-version/{identifier}/{version}"
         response_data = self._post(endpoint)
-        job = Job.parse_obj(response_data)
+        job = Job.model_validate(response_data)
         job._client = self._client
         return job
 
@@ -303,7 +303,7 @@ class SitesClient(ResourceClient):
         _, identifier = self._get_service_and_identifier(site_id, domain)
         endpoint = f"/update-site-options/atomic/{identifier}"
         response_data = self._post(endpoint, data={'options': options})
-        job = Job.parse_obj(response_data)
+        job = Job.model_validate(response_data)
         job._client = self._client
         return job
 
@@ -328,7 +328,7 @@ class SitesClient(ResourceClient):
             for action, value in actions.items():
                 payload[f"data[{key}][{action}]"] = value
         response_data = self._post(endpoint, data=payload)
-        job = Job.parse_obj(response_data)
+        job = Job.model_validate(response_data)
         job._client = self._client
         return job
 
@@ -401,7 +401,7 @@ class SitesClient(ResourceClient):
         _, identifier = self._get_service_and_identifier(site_id, domain)
         endpoint = f"/reset-db-password/atomic/{identifier}"
         response_data = self._post(endpoint)
-        job = Job.parse_obj(response_data)
+        job = Job.model_validate(response_data)
         job._client = self._client
         return job
 

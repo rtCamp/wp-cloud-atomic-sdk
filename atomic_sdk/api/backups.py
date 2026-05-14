@@ -27,7 +27,7 @@ class BackupsClient(ResourceClient):
 
         url = f"/on-demand-backup/create/{site_id}/{backup_type}"
         response_data = self._post(url)
-        return BackupJob.parse_obj(response_data)
+        return BackupJob.model_validate(response_data)
 
     def delete(self, site_id: int, backup_id: int) -> BackupJob:
         """
@@ -37,7 +37,7 @@ class BackupsClient(ResourceClient):
         """
         url = f"/on-demand-backup/delete/{site_id}/{backup_id}"
         response_data = self._post(url)
-        return BackupJob.parse_obj(response_data)
+        return BackupJob.model_validate(response_data)
 
     def list(
         self,
@@ -62,7 +62,7 @@ class BackupsClient(ResourceClient):
         if backup_types:
             url += f"/{'/'.join(backup_types)}"
         response_data = self._get(url)
-        return [Backup.parse_obj(item) for item in response_data]
+        return [Backup.model_validate(item) for item in response_data]
 
     def info(self, backup_id: Union[int, str], site_id: Optional[int] = None, domain: Optional[str] = None) -> Backup:
         """
@@ -79,7 +79,7 @@ class BackupsClient(ResourceClient):
         service, identifier = self._get_service_and_identifier(site_id=site_id, domain=domain)
         url = f"/site-backup-info/{service}/{identifier}/{backup_id}"
         response_data = self._get(url)
-        return Backup.parse_obj(response_data)
+        return Backup.model_validate(response_data)
 
     def get(self, backup_id: Union[int, str], site_id: Optional[int] = None, domain: Optional[str] = None) -> bytes:
         """
