@@ -1,4 +1,4 @@
-from typing import List, Optional, Literal, Union, TYPE_CHECKING
+from typing import BinaryIO, Iterator, List, Optional, Literal, Union, TYPE_CHECKING
 
 from .base import ResourceClient
 from ..models import Backup, BackupJob
@@ -86,7 +86,8 @@ class BackupsClient(ResourceClient):
         Downloads the raw content of a backup file (site-backup-get).
 
         The returned content is either a bzipped tar archive (for filesystem backups)
-        or a MySQL dump (for database backups).
+        or a MySQL dump (for database backups). This method loads the entire
+        backup into memory; use get_stream() or download() for large backups.
 
         Args:
             backup_id: The ID of the backup to download.
@@ -99,3 +100,62 @@ class BackupsClient(ResourceClient):
         service, identifier = self._get_service_and_identifier(site_id=site_id, domain=domain)
         url = f"/site-backup-get/{service}/{identifier}/{backup_id}"
         return self._get_raw(url)
+
+    def get_stream(
+        self,
+        backup_id: Union[int, str],
+        site_id: Optional[int] = None,
+        domain: Optional[str] = None,
+        chunk_size: int = 1 << 20,
+    ) -> Iterator[bytes]:
+        """
+        Streams the raw content of a backup file (site-backup-get).
+
+        The caller is responsible for iterating the returned generator to
+        completion, or closing it, so the underlying HTTP connection can be
+        released.
+
+        Args:
+            backup_id: The ID of the backup to download.
+            site_id: The Atomic site ID.
+            domain: The domain name of the site.
+            chunk_size: Maximum chunk size yielded by the response iterator.
+
+        Yields:
+            Raw backup bytes.
+        """
+        service, identifier = self._get_service_and_identifier(site_id=site_id, domain=domain)
+        url = f"/site-backup-get/{service}/{identifier}/{backup_id}"
+        return self._get_stream(url, chunk_size=chunk_size)
+
+    def download(
+        self,
+        backup_id: Union[int, str],
+        dest: BinaryIO,
+        site_id: Optional[int] = None,
+        domain: Optional[str] = None,
+        chunk_size: int = 1 << 20,
+    ) -> int:
+        """
+        Streams a backup file directly into a binary file-like object.
+
+        Args:
+            backup_id: The ID of the backup to download.
+            dest: A binary file-like object with a write() method.
+            site_id: The Atomic site ID.
+            domain: The domain name of the site.
+            chunk_size: Maximum chunk size read from the response.
+
+        Returns:
+            Total number of bytes written.
+        """
+        total_bytes = 0
+        for chunk in self.get_stream(
+            backup_id=backup_id,
+            site_id=site_id,
+            domain=domain,
+            chunk_size=chunk_size,
+        ):
+            total_bytes += dest.write(chunk)
+
+        return total_bytes
