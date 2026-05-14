@@ -107,24 +107,28 @@ class ResourceClient:
                         yield chunk
 
         except requests.exceptions.HTTPError as e:
-            status_code = e.response.status_code
-            try:
-                error_data = e.response.json()
-                message = error_data.get("message", e.response.text)
-            except requests.exceptions.JSONDecodeError:
-                message = e.response.text
-
-            if status_code == 404:
-                raise NotFoundError(message, status_code) from e
-            if 400 <= status_code < 500:
-                raise InvalidRequestError(message, status_code) from e
-            if 500 <= status_code < 600:
-                raise ServerError(message, status_code) from e
-
-            raise AtomicAPIError(message, status_code) from e
+            self._raise_for_http_error(e)
 
         except requests.exceptions.RequestException as e:
             raise AtomicAPIError(f"Request failed for {url}: {e}") from e
+
+    def _raise_for_http_error(self, error: requests.exceptions.HTTPError) -> None:
+        """Translate a requests HTTPError into the SDK's public exceptions."""
+        status_code = error.response.status_code
+        try:
+            error_data = error.response.json()
+            message = error_data.get("message", error.response.text)
+        except requests.exceptions.JSONDecodeError:
+            message = error.response.text
+
+        if status_code == 404:
+            raise NotFoundError(message, status_code) from error
+        if 400 <= status_code < 500:
+            raise InvalidRequestError(message, status_code) from error
+        if 500 <= status_code < 600:
+            raise ServerError(message, status_code) from error
+
+        raise AtomicAPIError(message, status_code) from error
 
     def _request(self, method: str, endpoint: str, **kwargs) -> dict:
         """
@@ -149,23 +153,7 @@ class ResourceClient:
             return response.json()
 
         except requests.exceptions.HTTPError as e:
-            status_code = e.response.status_code
-            try:
-                error_data = e.response.json()
-                message = error_data.get("message", e.response.text)
-            except requests.exceptions.JSONDecodeError:
-                message = e.response.text
-
-            # Raise the correct specific exception based on status code.
-            if status_code == 404:
-                raise NotFoundError(message, status_code) from e
-            if 400 <= status_code < 500:
-                raise InvalidRequestError(message, status_code) from e
-            if 500 <= status_code < 600:
-                raise ServerError(message, status_code) from e
-
-            # Fallback for any other HTTP error
-            raise AtomicAPIError(message, status_code) from e
+            self._raise_for_http_error(e)
 
         except requests.exceptions.RequestException as e:
             raise AtomicAPIError(f"Request failed for {url}: {e}") from e
