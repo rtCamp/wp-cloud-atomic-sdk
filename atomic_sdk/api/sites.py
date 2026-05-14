@@ -157,12 +157,17 @@ class SitesClient(ResourceClient):
 
         Returns:
             A Job object for the asynchronous domain update task.
+            None if the new domain is the same as the current domain (no update needed).
         """
         service, identifier = self._get_service_and_identifier(site_id, domain)
         endpoint = f"/update-site-domain/{service}/{identifier}/{new_domain}"
         if keep_old_domain:
             endpoint += "/keep"
         response_data = self._post(endpoint)
+
+        if isinstance(response_data, list) and not response_data:
+            # No update needed (new domain is the same as current domain)
+            return None
 
         job = Job.model_validate(response_data)
         job._client = self._client
