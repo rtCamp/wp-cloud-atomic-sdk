@@ -43,9 +43,9 @@ class ClientClient(ResourceClient):
         """
         Adds a new metadata value for the client account.
 
-        This method calls the API's ``add`` operation, which creates a key and
-        lets the API reject keys that already exist. Use :meth:`set_meta` when
-        you want update/overwrite behavior.
+        This method calls the API's ``add`` operation for callers that want
+        the create/add API verb. Use :meth:`set_meta` when you explicitly want
+        the API's update/overwrite operation.
 
         Args:
             key: The metadata key to add (e.g., 'webhook_url').
