@@ -23,8 +23,11 @@ class ClientClient(ResourceClient):
 
     def set_meta(self, key: str, value: Any) -> dict:
         """
-        Sets or updates a metadata value for the client account.
-        This method handles both 'add' and 'update' actions.
+        Updates a metadata value for the client account.
+
+        This method calls the API's ``update`` operation and preserves the
+        SDK's existing update/overwrite behavior. Use :meth:`add_meta` when
+        you specifically want the API's create-if-absent semantics.
 
         Args:
             key: The metadata key to set (e.g., 'webhook_url').
@@ -33,11 +36,25 @@ class ClientClient(ResourceClient):
         Returns:
             The raw response from the API, typically an empty dictionary.
         """
-        # The API uses 'add' for new keys and 'update' for existing ones.
-        # For simplicity, we can try 'update' first and fall back to 'add',
-        # or just abstract it away. The documentation implies 'update' can
-        # also create, so we'll use that.
         endpoint = f"/client-meta/{self._client_id_or_name}/{key}/update"
+        return self._post(endpoint, data={"value": value})
+
+    def add_meta(self, key: str, value: str) -> dict:
+        """
+        Adds a new metadata value for the client account.
+
+        This method calls the API's ``add`` operation, which creates a key and
+        lets the API reject keys that already exist. Use :meth:`set_meta` when
+        you want update/overwrite behavior.
+
+        Args:
+            key: The metadata key to add (e.g., 'webhook_url').
+            value: The value for the new key.
+
+        Returns:
+            The raw response from the API, typically an empty dictionary.
+        """
+        endpoint = f"/client-meta/{self._client_id_or_name}/{key}/add"
         return self._post(endpoint, data={"value": value})
 
     def remove_meta(self, key: str) -> dict:
