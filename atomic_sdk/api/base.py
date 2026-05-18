@@ -77,6 +77,7 @@ class ResourceClient:
         params: Optional[dict] = None,
         *,
         chunk_size: int = 1 << 20,
+        timeout: Optional[Union[float, Tuple[float, float]]] = None,
     ) -> Iterator[bytes]:
         """
         Performs a streaming GET request and yields raw byte chunks.
@@ -88,6 +89,7 @@ class ResourceClient:
             endpoint: The API endpoint to request.
             params: Optional dictionary of query parameters.
             chunk_size: Maximum chunk size yielded by requests.
+            timeout: Optional request timeout passed through to requests.
 
         Yields:
             Raw response bytes.
@@ -100,7 +102,7 @@ class ResourceClient:
         """
         url = self._base_url.rstrip('/') + endpoint
         try:
-            with self._session.get(url, params=params, stream=True, timeout=300) as response:
+            with self._session.get(url, params=params, stream=True, timeout=timeout) as response:
                 response.raise_for_status()
                 for chunk in response.iter_content(chunk_size=chunk_size):
                     if chunk:

@@ -181,6 +181,7 @@ print(f"Software management job ({software_job.job_id}) has been queued.")
 ### 5. Streaming a Backup Download
 
 Filesystem backups can be large, so use `download()` or `get_stream()` when you do not want to hold the whole file in memory.
+Streaming downloads default to requests' no-timeout behavior; pass `timeout=` if your application needs one.
 
 ```python
 with open("/tmp/site-backup.tar.bz2", "wb") as dest:

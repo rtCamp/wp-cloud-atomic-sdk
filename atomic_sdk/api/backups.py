@@ -1,4 +1,4 @@
-from typing import BinaryIO, Iterator, List, Optional, Literal, Union, TYPE_CHECKING
+from typing import BinaryIO, Iterator, List, Optional, Literal, Tuple, Union, TYPE_CHECKING
 
 from .base import ResourceClient
 from ..models import Backup, BackupJob
@@ -107,6 +107,7 @@ class BackupsClient(ResourceClient):
         site_id: Optional[int] = None,
         domain: Optional[str] = None,
         chunk_size: int = 1 << 20,
+        timeout: Optional[Union[float, Tuple[float, float]]] = None,
     ) -> Iterator[bytes]:
         """
         Streams the raw content of a backup file (site-backup-get).
@@ -120,13 +121,14 @@ class BackupsClient(ResourceClient):
             site_id: The Atomic site ID.
             domain: The domain name of the site.
             chunk_size: Maximum chunk size yielded by the response iterator.
+            timeout: Optional request timeout passed through to requests.
 
         Yields:
             Raw backup bytes.
         """
         service, identifier = self._get_service_and_identifier(site_id=site_id, domain=domain)
         url = f"/site-backup-get/{service}/{identifier}/{backup_id}"
-        return self._get_stream(url, chunk_size=chunk_size)
+        return self._get_stream(url, chunk_size=chunk_size, timeout=timeout)
 
     def download(
         self,
@@ -135,6 +137,7 @@ class BackupsClient(ResourceClient):
         site_id: Optional[int] = None,
         domain: Optional[str] = None,
         chunk_size: int = 1 << 20,
+        timeout: Optional[Union[float, Tuple[float, float]]] = None,
     ) -> int:
         """
         Streams a backup file directly into a binary file-like object.
@@ -145,6 +148,7 @@ class BackupsClient(ResourceClient):
             site_id: The Atomic site ID.
             domain: The domain name of the site.
             chunk_size: Maximum chunk size read from the response.
+            timeout: Optional request timeout passed through to requests.
 
         Returns:
             Total number of bytes written.
@@ -155,6 +159,7 @@ class BackupsClient(ResourceClient):
             site_id=site_id,
             domain=domain,
             chunk_size=chunk_size,
+            timeout=timeout,
         ):
             total_bytes += dest.write(chunk)
 
