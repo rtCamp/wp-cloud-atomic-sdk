@@ -13,6 +13,18 @@ from ..exceptions import AtomicAPIError, InvalidRequestError, NotFoundError, Rat
 logger = logging.getLogger("atomic_sdk.retry")
 
 
+RETRYABLE_REQUEST_EXCEPTIONS = (
+    requests.exceptions.ConnectionError,
+    requests.exceptions.Timeout,
+    requests.exceptions.ChunkedEncodingError,
+)
+
+NON_RETRYABLE_CONNECTION_EXCEPTIONS = (
+    requests.exceptions.ProxyError,
+    requests.exceptions.SSLError,
+)
+
+
 class ResourceClient:
     """A base client for a group of API resources."""
 
@@ -31,6 +43,8 @@ class ResourceClient:
             session: A requests.Session object configured with authentication.
             base_url: The base URL for the Atomic API.
             client_id_or_name: The client's identifier (name or ID).
+            max_retries: Number of retries for 429, 5xx, and connection errors.
+            backoff_base: Base delay in seconds for exponential backoff with jitter.
         """
         self._session = session
         self._base_url = base_url
@@ -84,7 +98,7 @@ class ResourceClient:
             try:
                 response = self._session.get(url, params=params, timeout=300) # Longer timeout for downloads
                 response.raise_for_status()
-                return response.content
+                break
             except requests.exceptions.HTTPError as e:
                 if self._retry_http_error(e, attempt):
                     attempt += 1
@@ -95,6 +109,11 @@ class ResourceClient:
                     attempt += 1
                     continue
                 raise AtomicAPIError(f"Request failed for {url}: {e}") from e
+
+        try:
+            return response.content
+        except requests.exceptions.RequestException as e:
+            raise AtomicAPIError(f"Request failed for {url}: {e}") from e
 
     def _get_stream(
         self,
@@ -216,6 +235,8 @@ class ResourceClient:
 
     def _retry_request_exception(self, error: requests.exceptions.RequestException, url: str, attempt: int) -> bool:
         """Sleep and return True when a connection-level request error should be retried."""
+        if not self._is_retryable_request_exception(error):
+            return False
         if attempt >= self._max_retries:
             return False
 
@@ -230,6 +251,12 @@ class ResourceClient:
         )
         time.sleep(delay)
         return True
+
+    @staticmethod
+    def _is_retryable_request_exception(error: requests.exceptions.RequestException) -> bool:
+        if isinstance(error, NON_RETRYABLE_CONNECTION_EXCEPTIONS):
+            return False
+        return isinstance(error, RETRYABLE_REQUEST_EXCEPTIONS)
 
     def _backoff_delay(self, attempt: int) -> float:
         return random.uniform(0, self._backoff_base * (2 ** attempt))

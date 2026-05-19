@@ -48,6 +48,10 @@ class AtomicClient:
             raise ValueError("An API key is required.")
         if not client_id_or_name:
             raise ValueError("A client identifier (name or ID) is required.")
+        if max_retries < 0:
+            raise ValueError("max_retries must be greater than or equal to 0.")
+        if backoff_base < 0:
+            raise ValueError("backoff_base must be greater than or equal to 0.")
 
         self.api_key = api_key
         self.client_id_or_name = client_id_or_name
