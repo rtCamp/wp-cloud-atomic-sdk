@@ -33,6 +33,16 @@ class SecurityClient(ResourceClient):
             return site_id
         raise ValueError("You must provide either a 'site_id' or a 'domain'.")
 
+    @staticmethod
+    def _parse_destination(value: Any) -> Optional[str]:
+        """Return the canonical CIDR string for an IP/CIDR, or None if unparseable."""
+        if not isinstance(value, str):
+            return None
+        try:
+            return str(ipaddress.ip_network(value.strip(), strict=False))
+        except (ValueError, TypeError):
+            return None
+
     def list_rules(
         self,
         site_id: Optional[int] = None,
@@ -79,6 +89,10 @@ class SecurityClient(ResourceClient):
         Returns:
             A dictionary describing the created rule (same shape as a list row),
             including the newly assigned `rule_id`.
+
+        Raises:
+            ConflictError: If an equivalent or overlapping rule already exists
+                           on the site (HTTP 409).
         """
         if not isinstance(port, int) or isinstance(port, bool):
             raise ValueError("'port' must be an integer between 1 and 65535.")
@@ -117,7 +131,7 @@ class SecurityClient(ResourceClient):
         rule_id: int,
         site_id: Optional[int] = None,
         domain: Optional[str] = None,
-    ) -> Dict[str, Any]:
+    ) -> List[Any]:
         """
         Remove a firewall rule from a site.
 
@@ -128,7 +142,7 @@ class SecurityClient(ResourceClient):
             domain: The domain name of the site.
 
         Returns:
-            An empty dictionary on success.
+            An empty list on success.
         """
         identifier = self._get_identifier(site_id, domain)
         endpoint = f"/firewall-rules/{identifier}/remove"
@@ -155,7 +169,9 @@ class SecurityClient(ResourceClient):
             site_id: The Atomic site ID.
             domain: The domain name of the site.
             rule_id: Match by rule ID.
-            destination: Match by destination IP/CIDR (exact string match).
+            destination: Match by destination IP/CIDR. Both sides are
+                         normalized to canonical CIDR form before comparison,
+                         so `10.20.30.40` matches a stored `10.20.30.40/32`.
             port: Match by port.
             protocol: Match by protocol (`tcp` or `udp`).
             action: Match by action (`allow` or `deny`).
@@ -167,12 +183,23 @@ class SecurityClient(ResourceClient):
                 and protocol is None and action is None:
             raise ValueError("At least one filter (rule_id, destination, port, protocol, action) must be provided.")
 
+        if destination is not None:
+            normalized = self._parse_destination(destination)
+            if normalized is None:
+                raise ValueError(
+                    f"'destination' must be a valid IPv4/IPv6 address or CIDR range "
+                    f"(got {destination!r})."
+                )
+            destination = normalized
+
         rules = self.list_rules(site_id=site_id, domain=domain)
         for rule in rules:
             if rule_id is not None and rule.get("rule_id") != rule_id:
                 continue
-            if destination is not None and rule.get("destination") != destination:
-                continue
+            if destination is not None:
+                rule_dest = rule.get("destination")
+                if (self._parse_destination(rule_dest) or rule_dest) != destination:
+                    continue
             if port is not None and rule.get("port") != port:
                 continue
             if protocol is not None and rule.get("protocol") != protocol:

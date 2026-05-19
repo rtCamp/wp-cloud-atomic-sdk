@@ -1,7 +1,7 @@
 import requests
 from typing import Optional, Tuple, Union
 
-from ..exceptions import AtomicAPIError, InvalidRequestError, NotFoundError, ServerError
+from ..exceptions import AtomicAPIError, ConflictError, InvalidRequestError, NotFoundError, ServerError
 
 
 class ResourceClient:
@@ -104,6 +104,8 @@ class ResourceClient:
             # Raise the correct specific exception based on status code.
             if status_code == 404:
                 raise NotFoundError(message, status_code) from e
+            if status_code == 409:
+                raise ConflictError(message, status_code) from e
             if 400 <= status_code < 500:
                 raise InvalidRequestError(message, status_code) from e
             if 500 <= status_code < 600:
