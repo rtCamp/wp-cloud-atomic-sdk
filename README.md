@@ -29,6 +29,7 @@ This SDK provides clients for:
 -   🌐 **Edge Cache**: Control caching and DDoS protection.
 -   🔐 **Custom SSL Certificates**: Stage, activate, and manage your own SSL certificates.
 -   🛡️ **Security**: Manage egress firewall rules (allow / deny outbound traffic per port and destination).
+-   ⏱️ **Cron**: List, add, and remove scheduled WP-Cron entries.
 -   ⚙️ **Servers**: Get information on available datacenters and PHP versions.
 -   👤 **Client**: Manage account-wide settings like webhooks.
 -   ✉️ **Email**: Check the email sending blocklist.
