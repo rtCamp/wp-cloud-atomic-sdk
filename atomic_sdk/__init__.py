@@ -16,6 +16,7 @@ from .exceptions import (
     AuthenticationError,
     InvalidRequestError,
     NotFoundError,
+    RateLimitError,
     ServerError,
 )
 
@@ -35,6 +36,7 @@ __all__ = [
     "AuthenticationError",
     "InvalidRequestError",
     "NotFoundError",
+    "RateLimitError",
     "ServerError",
     "Job",
     "Backup",

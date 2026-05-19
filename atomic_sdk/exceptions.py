@@ -23,6 +23,13 @@ class InvalidRequestError(AtomicAPIError):
         super().__init__(message, status_code)
 
 
+class RateLimitError(AtomicAPIError):
+    """Raised when the API returns HTTP 429 after retry exhaustion."""
+    def __init__(self, message="Rate limit exceeded.", status_code=429, retry_after=None):
+        super().__init__(message, status_code)
+        self.retry_after = retry_after
+
+
 class NotFoundError(AtomicAPIError):
     """Raised when a resource is not found (e.g., HTTP 404)."""
     def __init__(self, message="The requested resource was not found.", status_code=404):
