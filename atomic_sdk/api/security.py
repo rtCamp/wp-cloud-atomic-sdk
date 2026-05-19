@@ -84,6 +84,9 @@ class SecurityClient(ResourceClient):
             raise ValueError("'port' must be an integer between 1 and 65535.")
         if not 1 <= port <= 65535:
             raise ValueError("'port' must be between 1 and 65535.")
+        if not isinstance(destination, str):
+            raise ValueError("'destination' must be a string IP address or CIDR range.")
+        destination = destination.strip()
         if not destination:
             raise ValueError("'destination' must be a non-empty IP address or CIDR range.")
         try:
