@@ -136,6 +136,12 @@ Learn how to create, list, download, and delete backups. Note that on-demand bac
     *   Downloading the raw backup file content as bytes with `client.backups.get()`.
     *   Saving the downloaded content to a local file.
 
+### 📥 Stream a Backup to Disk
+*   **Run:** `BACKUP_ID=123 python examples/backups/03_download_streaming.py`
+*   **Shows:**
+    *   Streaming a backup with `client.backups.download()` instead of buffering it in memory.
+    *   Writing chunks directly to a local binary file.
+
 ### 🗑️ Delete an On-Demand Backup
 *   **Run:** `python examples/backups/99_delete_ondemand_backup.py`
 *   **Shows:**
