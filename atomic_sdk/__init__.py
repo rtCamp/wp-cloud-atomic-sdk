@@ -14,6 +14,7 @@ from .client import AtomicClient
 from .exceptions import (
     AtomicAPIError,
     AuthenticationError,
+    ConflictError,
     InvalidRequestError,
     NotFoundError,
     ServerError,
@@ -33,6 +34,7 @@ __all__ = [
     "AtomicClient",
     "AtomicAPIError",
     "AuthenticationError",
+    "ConflictError",
     "InvalidRequestError",
     "NotFoundError",
     "ServerError",

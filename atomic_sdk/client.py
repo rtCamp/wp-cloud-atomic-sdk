@@ -14,6 +14,7 @@ from .api.custom_certificates import CustomCertificatesClient
 from .api.edge_cache import EdgeCacheClient
 from .api.email import EmailClient
 from .api.metrics import MetricsClient
+from .api.security import SecurityClient
 from .api.servers import ServersClient
 from .api.sites import SitesClient
 from .api.ssh import SSHClient
@@ -67,6 +68,7 @@ class AtomicClient:
         self.edge_cache = EdgeCacheClient(self._session, self.BASE_URL, self.client_id_or_name)
         self.email = EmailClient(self._session, self.BASE_URL, self.client_id_or_name)
         self.metrics = MetricsClient(self._session, self.BASE_URL, self.client_id_or_name)
+        self.security = SecurityClient(self._session, self.BASE_URL, self.client_id_or_name)
         self.servers = ServersClient(self._session, self.BASE_URL, self.client_id_or_name)
         self.sites = SitesClient(self._session, self.BASE_URL, self.client_id_or_name)
         self.ssh = SSHClient(self._session, self.BASE_URL, self.client_id_or_name)

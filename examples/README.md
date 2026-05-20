@@ -234,6 +234,14 @@ Execute an operation across many or all of your sites at once.
 *   **Run:** `python examples/servers/01_get_server_info.py`
 *   **Shows:** Using `client.servers` to list available datacenters and supported PHP versions on the platform.
 
+### 🛡️ Manage Egress Firewall Rules
+*   **Run:** `python examples/security/01_manage_firewall_rules.py`
+*   **Shows:**
+    *   Listing existing egress firewall rules with `client.security.list_rules()`.
+    *   Adding an outbound `allow`/`deny` rule with `client.security.add_rule()` (TCP/UDP, port 1-65535, IP/CIDR destination).
+    *   Locating a rule by ID, port, destination, etc. with `client.security.find_rule()`.
+    *   Removing a rule with `client.security.remove_rule()`.
+
 ### ✉️ Check Email Blocklist
 *   **Run:** `python examples/email/01_list_blocked_domains.py`
 *   **Shows:** Using `client.email` to retrieve a list of domains that have been blocked from sending email.
