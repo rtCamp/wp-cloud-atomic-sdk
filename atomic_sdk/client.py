@@ -75,8 +75,10 @@ class AtomicClient:
         self.tasks = TasksClient(self._session, self.BASE_URL, self.client_id_or_name)
         self.utility = UtilityClient(self._session, self.BASE_URL, self.client_id_or_name)
 
-        # Pass a reference of the main client to the sites client for job status checks
+        # Pass a reference of the main client to resource clients that return Job objects,
+        # so Job.status() can call self._client.sites.get_job_status().
         self.sites._client = self
+        self.ssh._client = self
 
     def __repr__(self):
         return f"<AtomicClient client_id='{self.client_id_or_name}'>"
