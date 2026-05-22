@@ -1,6 +1,5 @@
 import os
 import sys
-import time
 from dotenv import load_dotenv
 from atomic_sdk import AtomicClient, AtomicAPIError, NotFoundError
 from atomic_sdk.models import Job
@@ -13,28 +12,6 @@ CLIENT_ID = os.environ.get("ATOMIC_CLIENT_ID")
 # This script is designed to clean up the site created by the previous examples.
 # It also, accepts site domain from command line and fallbacks to .env
 SITE_DOMAIN = sys.argv[1] if len(sys.argv) > 1 else os.environ.get("SITE_DOMAIN")
-
-def poll_job_until_complete(job: Job, timeout=600, poll_interval=15):
-    """
-    Polls the job status every `poll_interval` seconds until it completes or times out.
-    Returns the final status string.
-    """
-    start = time.time()
-    while True:
-        status = job.status()
-        job_state = None
-        if isinstance(status, dict):
-            job_state = status.get("_status", None)
-            print(f"🔄  - Job status: {job_state}")
-        else:
-            job_state = status
-            print(f"🔄  - Job status: {job_state}")
-        if job_state in ("success", "failed", "error"):
-            return job_state
-        if time.time() - start > timeout:
-            print("⏰  - Timeout reached while waiting for job.")
-            return job_state
-        time.sleep(poll_interval)
 
 def main():
     """
@@ -89,7 +66,7 @@ def main():
 
         print(f"🚀   - Deletion job started with ID: {delete_job.job_id}")
         print("⏳   - Waiting for deletion to complete...")
-        status = poll_job_until_complete(delete_job, timeout=300, poll_interval=5)
+        status = delete_job.wait(timeout=300, poll_interval=5)
 
         if status == "success":
             print(f"✅   - Job completed successfully. Site '{SITE_DOMAIN}' has been deleted.")

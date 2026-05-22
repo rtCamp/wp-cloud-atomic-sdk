@@ -472,22 +472,52 @@ class SitesClient(ResourceClient):
 
     # --- Job Status ---
 
-    def get_job_status(self, job_id: int) -> str:
+    def _build_jobs_payload(self, job_ids: List[int]) -> Dict[str, int]:
+        """Builds the PHP-style indexed form payload used by batch job endpoints."""
+        if not job_ids:
+            raise ValueError("At least one job_id is required.")
+        if not all(isinstance(j, int) for j in job_ids):
+            raise ValueError("job_ids must be a list of integers.")
+        return {f"jobs[{i}]": jid for i, jid in enumerate(job_ids)}
+
+    def get_job_status(self, job_id: int) -> Dict[str, Any]:
         """
-        Gets the status of a specific job by its ID. A job's status can be
-        'success', 'failure', or 'queued'.
+        Gets the full status object for a job by ID.
+
+        The response includes the terminal status under `_status`
+        ('success', 'failure', or 'queued') along with job metadata such as
+        `type`, `created`, `completed`, and the job's result payload under
+        `data`.
 
         Args:
             job_id: The ID of the job to check.
 
         Returns:
-            The job status string.
+            A dictionary containing `_status` and the rest of the job object.
         """
         return self._get(f"/job-status/{job_id}")
 
+    def get_job_statuses(self, job_ids: List[int]) -> Dict[str, Dict[str, Any]]:
+        """
+        Gets the full status objects for one or more jobs in a single call.
+
+        Args:
+            job_ids: A non-empty list of integer job IDs to check.
+
+        Returns:
+            A dictionary mapping each job ID (as a string) to its full job
+            object, identical in shape to what `get_job_status` returns.
+        """
+        payload = self._build_jobs_payload(job_ids)
+        return self._post("/job-status/", data=payload)
+
     def get_job_completion(self, job_id: int) -> str:
         """
-        Gets status of a job by ID (older endpoint, `get_job_status` is preferred).
+        Gets the terminal status string for a job by ID.
+
+        This is the lightweight counterpart to `get_job_status`: it returns
+        just the status ('success', 'failure', or 'queued') without the
+        surrounding job metadata.
 
         Args:
             job_id: The ID of the job to check.
@@ -496,3 +526,18 @@ class SitesClient(ResourceClient):
             The job status string.
         """
         return self._get(f"/job-completion/{job_id}")
+
+    def get_job_completions(self, job_ids: List[int]) -> Dict[str, str]:
+        """
+        Batch counterpart to `get_job_completion`: fetches the terminal
+        status strings for one or more jobs in a single call.
+
+        Args:
+            job_ids: A non-empty list of integer job IDs to check.
+
+        Returns:
+            A dictionary mapping each job ID (as a string) to its status
+            string.
+        """
+        payload = self._build_jobs_payload(job_ids)
+        return self._post("/job-completion/", data=payload)

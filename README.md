@@ -122,7 +122,6 @@ except NotFoundError:
 Creating a site is an asynchronous operation. The SDK returns a `Job` object that you can use to poll for its status.
 
 ```python
-import time
 from atomic_sdk import InvalidRequestError
 from atomic_sdk.models import Job
 
@@ -138,18 +137,8 @@ try:
     print(f"Site creation job started with ID: {new_site_job.job_id}")
     print("Waiting for job to complete...")
 
-    # Poll the job status until it's finished
-    while True:
-        status = new_site_job.status()
-        print(f"  - Job status: {status["_status"]}")
-
-        job_state = status["_status"] if isinstance(status, dict) and "_status" in status else status
-
-        if job_state in ("success", "failed", "error"):
-            final_status = job_state
-            break
-
-        time.sleep(10) # Wait for 10 seconds before polling again
+    # Block until the job reaches a terminal status ('success' or 'failure').
+    final_status = new_site_job.wait(timeout=600, poll_interval=10)
 
     if final_status == "success":
         print(f"Site '{new_site_job.domain_name}' was created successfully!")
@@ -158,6 +147,8 @@ try:
 
 except InvalidRequestError as e:
     print(f"Error creating site: {e}")
+except TimeoutError as e:
+    print(f"Site creation timed out: {e}")
 ```
 
 ### 4. Managing Site Software

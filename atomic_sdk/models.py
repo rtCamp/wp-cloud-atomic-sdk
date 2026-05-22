@@ -60,11 +60,11 @@ class Job(BaseModel):
             The job status, e.g., 'queued', 'success', 'failure'.
 
         Raises:
-            Exception: if the internal client reference is not set.
+            RuntimeError: if the internal client reference is not set.
         """
         if not self._client:
             raise RuntimeError("Job object must be initialized with a client reference to fetch status.")
-        return self._client.sites.get_job_status(self.job_id)
+        return self._client.sites.get_job_status(self.job_id)["_status"]
 
     def wait(self, timeout: int = 300, poll_interval: int = 5) -> str:
         """
@@ -89,6 +89,63 @@ class Job(BaseModel):
             time.sleep(poll_interval)
 
         raise TimeoutError(f"Job {self.job_id} did not complete within {timeout} seconds.")
+
+    @classmethod
+    def wait_all(
+        cls,
+        jobs: List["Job"],
+        *,
+        timeout: int = 300,
+        poll_interval: int = 5,
+    ) -> Dict[str, str]:
+        """
+        Blocks until every job in `jobs` reaches a terminal status, using
+        the batch job-status endpoint to coalesce status checks into a
+        single HTTP call per poll.
+
+        Args:
+            jobs: A non-empty list of Job instances. All jobs must share
+                the same client reference.
+            timeout: Maximum total time to wait in seconds.
+            poll_interval: Time to wait between status checks in seconds.
+
+        Returns:
+            A dictionary mapping each job ID (as a string) to its terminal
+            status ('success' or 'failure').
+
+        Raises:
+            ValueError: If `jobs` is empty.
+            RuntimeError: If the jobs do not all share the same client.
+            TimeoutError: If any job has not reached a terminal status by
+                the deadline.
+        """
+        import time
+
+        if not jobs:
+            raise ValueError("jobs list cannot be empty.")
+        client = jobs[0]._client
+        if client is None or any(j._client is not client for j in jobs):
+            raise RuntimeError("All jobs must share the same client reference.")
+
+        pending = {str(j.job_id) for j in jobs}
+        terminal: Dict[str, str] = {}
+        deadline = time.time() + timeout
+
+        while True:
+            statuses = client.sites.get_job_statuses([int(jid) for jid in pending])
+            for jid, payload in statuses.items():
+                status = payload["_status"]
+                if status in ("success", "failure"):
+                    terminal[jid] = status
+                    pending.discard(jid)
+
+            if not pending:
+                return terminal
+            if time.time() >= deadline:
+                raise TimeoutError(
+                    f"Jobs did not complete within {timeout} seconds: {sorted(pending)}"
+                )
+            time.sleep(poll_interval)
 
 class BackupJob(BaseModel):
     """

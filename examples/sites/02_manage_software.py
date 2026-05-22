@@ -1,5 +1,4 @@
 import os
-import time
 from dotenv import load_dotenv
 from atomic_sdk import AtomicClient, AtomicAPIError, NotFoundError
 from atomic_sdk.models import Job
@@ -12,23 +11,6 @@ CLIENT_ID = os.environ.get("ATOMIC_CLIENT_ID")
 # This example assumes the site from '01_create_and_get_site.py' exists.
 # Make sure to run that script first.
 SITE_DOMAIN = os.environ.get("SITE_DOMAIN") # Use the same domain as the create script
-
-def poll_job_until_complete(job: Job, timeout=600, poll_interval=15):
-    """
-    Polls the job status every `poll_interval` seconds until it completes or times out.
-    Returns the final status string.
-    """
-    start = time.time()
-    while True:
-        status = job.status()
-        print(f"  - Job status: {status["_status"]}")
-        job_state = status["_status"] if isinstance(status, dict) and "_status" in status else status
-        if job_state in ("success", "failed", "error"):
-            return job_state
-        if time.time() - start > timeout:
-            print("  - Timeout reached while waiting for job.")
-            return job_state
-        time.sleep(poll_interval)
 
 def main():
     """
@@ -65,7 +47,7 @@ def main():
 
         print(f"  - Software installation job started with ID: {install_job.job_id}")
         print("  - Waiting for job to complete...")
-        status = poll_job_until_complete(install_job, timeout=300, poll_interval=2)
+        status = install_job.wait(timeout=300, poll_interval=2)
 
         if status != "success":
             raise RuntimeError(f"Installation job failed with status: {status}")
@@ -82,7 +64,7 @@ def main():
 
         print(f"  - Activation job started with ID: {activation_job.job_id}")
         print("  - Waiting for job to complete...")
-        status = poll_job_until_complete(activation_job, timeout=300, poll_interval=2)
+        status = activation_job.wait(timeout=300, poll_interval=2)
 
         if status != "success":
             raise RuntimeError(f"Activation job failed with status: {status}")

@@ -1,6 +1,5 @@
 import os
 import json
-import time
 from dotenv import load_dotenv
 from atomic_sdk import AtomicClient, AtomicAPIError, NotFoundError
 from atomic_sdk.models import Job, Site
@@ -29,24 +28,6 @@ SITE_META_PAYLOAD = {
 }
 
 
-def poll_job_until_complete(job: Job, timeout=600, poll_interval=5):
-    """
-    Polls the job status every `poll_interval` seconds until it completes or times out.
-    Returns the final status string.
-    """
-    start = time.time()
-    while True:
-        status = job.status()
-        print(f"⏳ Job status: {status['_status']}")
-        job_state = status["_status"] if isinstance(status, dict) and "_status" in status else status
-        if job_state in ("success", "failed", "error"):
-            return job_state
-        if time.time() - start > timeout:
-            print("⚠️ Timeout reached while waiting for job.")
-            return job_state
-        time.sleep(poll_interval)
-
-
 def create_site(client):
     print(f"\n🚀 Creating site '{SITE_DOMAIN}' as '{SITE_TYPE}' with 10GB storage and 2 PHP workers...")
     try:
@@ -63,7 +44,7 @@ def create_site(client):
         )
         print(f"🛠️ Site creation job started with ID: {creation_job.job_id}")
         print("⏳ Waiting for job to complete (this can take several minutes)...")
-        final_status = poll_job_until_complete(creation_job, timeout=600, poll_interval=5)
+        final_status = creation_job.wait(timeout=600, poll_interval=5)
 
         if final_status != "success":
             raise RuntimeError(f"❌ Site creation failed with status: {final_status}")
