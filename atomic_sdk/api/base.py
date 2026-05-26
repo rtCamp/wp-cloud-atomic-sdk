@@ -14,14 +14,8 @@ logger = logging.getLogger("atomic_sdk.retry")
 
 
 RETRYABLE_REQUEST_EXCEPTIONS = (
-    requests.exceptions.ConnectionError,
     requests.exceptions.Timeout,
     requests.exceptions.ChunkedEncodingError,
-)
-
-NON_RETRYABLE_CONNECTION_EXCEPTIONS = (
-    requests.exceptions.ProxyError,
-    requests.exceptions.SSLError,
 )
 
 
@@ -256,9 +250,10 @@ class ResourceClient:
 
     @staticmethod
     def _is_retryable_request_exception(error: requests.exceptions.RequestException) -> bool:
-        if isinstance(error, NON_RETRYABLE_CONNECTION_EXCEPTIONS):
-            return False
-        return isinstance(error, RETRYABLE_REQUEST_EXCEPTIONS)
+        return (
+            type(error) is requests.exceptions.ConnectionError
+            or isinstance(error, RETRYABLE_REQUEST_EXCEPTIONS)
+        )
 
     def _backoff_delay(self, attempt: int) -> float:
         return random.uniform(0, self._backoff_base * (2 ** attempt))
