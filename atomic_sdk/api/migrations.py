@@ -49,7 +49,7 @@ class MigrationsClient(ResourceClient):
         if ssh_id_pass: payload["ssh-id-pass"] = ssh_id_pass
 
         response_data = self._post(endpoint, data=payload)
-        return MigrationCreationResponse.parse_obj(response_data)
+        return MigrationCreationResponse.model_validate(response_data)
 
     def get(self, migration_id: int) -> Migration:
         """
@@ -64,7 +64,7 @@ class MigrationsClient(ResourceClient):
         """
         endpoint = f"/migration/get/{migration_id}"
         response_data = self._get(endpoint)
-        return Migration.parse_obj(response_data)
+        return Migration.model_validate(response_data)
 
     def update(self, migration_id: int, **kwargs: Any) -> Dict[str, Any]:
         """
@@ -108,7 +108,7 @@ class MigrationsClient(ResourceClient):
         """
         endpoint = f"/migration/preflight/{migration_id}"
         response_data = self._get(endpoint)
-        return ResponseTicket.parse_obj(response_data)
+        return ResponseTicket.model_validate(response_data)
 
     def set_ready(self, migration_id: int) -> ResponseTicket:
         """
@@ -122,4 +122,4 @@ class MigrationsClient(ResourceClient):
         """
         endpoint = f"/migration/ready/{migration_id}"
         response_data = self._get(endpoint)
-        return ResponseTicket.parse_obj(response_data)
+        return ResponseTicket.model_validate(response_data)

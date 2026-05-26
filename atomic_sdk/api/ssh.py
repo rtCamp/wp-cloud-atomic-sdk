@@ -218,7 +218,7 @@ class SSHClient(ResourceClient):
         endpoint = f"/ssh-disconnect-all-users/{service}/{identifier}"
         response_data = self._get(endpoint)
 
-        job = Job.parse_obj(response_data)
+        job = Job.model_validate(response_data)
         job._client = self._client
         return job
 
