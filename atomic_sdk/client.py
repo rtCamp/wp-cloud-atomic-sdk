@@ -14,6 +14,7 @@ from .api.custom_certificates import CustomCertificatesClient
 from .api.edge_cache import EdgeCacheClient
 from .api.email import EmailClient
 from .api.metrics import MetricsClient
+from .api.security import SecurityClient
 from .api.servers import ServersClient
 from .api.sites import SitesClient
 from .api.ssh import SSHClient
@@ -90,14 +91,17 @@ class AtomicClient:
         self.edge_cache = EdgeCacheClient(*resource_args)
         self.email = EmailClient(*resource_args)
         self.metrics = MetricsClient(*resource_args)
+        self.security = SecurityClient(*resource_args)
         self.servers = ServersClient(*resource_args)
         self.sites = SitesClient(*resource_args)
         self.ssh = SSHClient(*resource_args)
         self.tasks = TasksClient(*resource_args)
         self.utility = UtilityClient(*resource_args)
 
-        # Pass a reference of the main client to the sites client for job status checks
+        # Pass a reference of the main client to resource clients that return Job objects,
+        # so Job.status() can call self._client.sites.get_job_status().
         self.sites._client = self
+        self.ssh._client = self
 
     def __repr__(self):
         return f"<AtomicClient client_id='{self.client_id_or_name}'>"

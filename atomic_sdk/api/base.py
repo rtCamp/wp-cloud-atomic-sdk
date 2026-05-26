@@ -7,7 +7,7 @@ from typing import Iterator, Optional, Tuple, Union
 
 import requests
 
-from ..exceptions import AtomicAPIError, InvalidRequestError, NotFoundError, RateLimitError, ServerError
+from ..exceptions import AtomicAPIError, ConflictError, InvalidRequestError, NotFoundError, RateLimitError, ServerError
 
 
 logger = logging.getLogger("atomic_sdk.retry")
@@ -175,6 +175,8 @@ class ResourceClient:
                 status_code,
                 retry_after=self._parse_retry_after(error.response),
             ) from error
+        if status_code == 409:
+            raise ConflictError(message, status_code) from error
         if 400 <= status_code < 500:
             raise InvalidRequestError(message, status_code) from error
         if 500 <= status_code < 600:
