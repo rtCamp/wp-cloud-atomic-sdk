@@ -17,6 +17,7 @@ from .exceptions import (
     ConflictError,
     InvalidRequestError,
     NotFoundError,
+    RateLimitError,
     ServerError,
 )
 
@@ -37,6 +38,7 @@ __all__ = [
     "ConflictError",
     "InvalidRequestError",
     "NotFoundError",
+    "RateLimitError",
     "ServerError",
     "Job",
     "Backup",
