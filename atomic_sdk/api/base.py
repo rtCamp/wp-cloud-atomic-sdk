@@ -29,6 +29,7 @@ class ResourceClient:
         client_id_or_name: str,
         max_retries: int = 3,
         backoff_base: float = 0.5,
+        timeout: Optional[Union[float, Tuple[float, float]]] = 30,
     ):
         """
         Initializes the ResourceClient.
@@ -39,10 +40,12 @@ class ResourceClient:
             client_id_or_name: The client's identifier (name or ID).
             max_retries: Number of retries for 429, 5xx, and connection errors.
             backoff_base: Base delay in seconds for exponential backoff with jitter.
+            timeout: Default timeout passed to requests calls.
         """
         self._session = session
         self._base_url = base_url
         self._client_id_or_name = client_id_or_name
+        self._timeout = timeout
         self._max_retries = max_retries
         self._backoff_base = backoff_base
 
@@ -90,7 +93,7 @@ class ResourceClient:
         attempt = 0
         while True:
             try:
-                response = self._session.get(url, params=params, timeout=300) # Longer timeout for downloads
+                response = self._session.get(url, params=params, stream=True, timeout=300) # Longer timeout for downloads
                 response.raise_for_status()
                 break
             except requests.exceptions.HTTPError as e:
@@ -108,6 +111,10 @@ class ResourceClient:
             return response.content
         except requests.exceptions.RequestException as e:
             raise AtomicAPIError(f"Request failed for {url}: {e}") from e
+        finally:
+            close = getattr(response, "close", None)
+            if close:
+                close()
 
     def _get_stream(
         self,
@@ -139,6 +146,7 @@ class ResourceClient:
             ServerError: For 5xx responses.
         """
         url = self._base_url.rstrip('/') + endpoint
+        timeout = self._timeout if timeout is None else timeout
         try:
             with self._session.get(url, params=params, stream=True, timeout=timeout) as response:
                 response.raise_for_status()
@@ -275,6 +283,7 @@ class ResourceClient:
             InvalidRequestError: For 4xx client errors with a message.
         """
         url = self._base_url.rstrip('/') + endpoint
+        kwargs.setdefault("timeout", self._timeout)
         attempt = 0
         while True:
             try:

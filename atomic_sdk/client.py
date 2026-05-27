@@ -75,7 +75,6 @@ class AtomicClient:
             "User-Agent": f"Python AtomicSDK/{sdk_version}",
             "Accept": "application/json",
         })
-        self._session.timeout = self.timeout
 
         resource_args = (
             self._session,
@@ -83,6 +82,7 @@ class AtomicClient:
             self.client_id_or_name,
             self.max_retries,
             self.backoff_base,
+            self.timeout,
         )
 
         # Instantiate and attach all the resource-specific clients
