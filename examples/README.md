@@ -217,6 +217,22 @@ Execute an operation across many or all of your sites at once.
 *   **Run:** `python examples/tasks/03_run_bulk_wp_cli_task.py`
 *   **Shows:** Creating a `run-wp-cli-command` task to execute a WP-CLI command on all sites and get results via webhook.
 
+### 📦 Bulk Software Management (Dedicated Method)
+*   **Run:** `python examples/tasks/04_run_bulk_software_task.py`
+*   **Shows:** Using `client.tasks.create_software()` — the per-type method that only accepts software-task params — to install a plugin across all sites.
+
+### 🔍 Bulk File Search (Dedicated Method)
+*   **Run:** `python examples/tasks/05_run_bulk_find_files_task.py`
+*   **Shows:** Using `client.tasks.create_find_files()` to search every client site for a file pattern.
+
+### ⌨️ Bulk WP-CLI Commands (Dedicated Method)
+*   **Run:** `python examples/tasks/06_run_bulk_wp_cli_task.py`
+*   **Shows:** Using `client.tasks.create_wp_cli()` to run a WP-CLI command on every client site.
+
+### 🛡️ Bulk WPCloud Scan
+*   **Run:** `python examples/tasks/07_run_bulk_wpcloud_scan_task.py`
+*   **Shows:** Using `client.tasks.create_wpcloud_scan()` to run a WPScan vulnerability scan (or `pnt-versions` plugin/theme inventory) across every client site, with per-site results delivered via webhook.
+
 
 ## ☁️ Step 9: Migrate a Site to WP.Cloud
 End-to-end examples to migrate an existing WordPress site from a remote host to a new Atomic site.
@@ -285,7 +301,7 @@ Before you begin:
 *   **Run:** `python examples/email/01_list_blocked_domains.py`
 *   **Shows:** Using `client.email` to retrieve a list of domains that have been blocked from sending email.
 
-## 🧹 Step 10: Clean Up
+## 🧹 Step 11: Clean Up
 *   **Goal:** Delete the test site created in the examples.
 *   **Run:** `python examples/sites/99_delete_site.py`
 *   **Shows:** A script that includes a safety prompt and then permanently deletes the test site from your account, waiting for the deletion job to complete.
