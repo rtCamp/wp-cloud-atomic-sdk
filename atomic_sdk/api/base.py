@@ -60,7 +60,7 @@ class ResourceClient:
         response = self._request("GET", endpoint, params=params)
         return response.get("data", {})
 
-    def _post(self, endpoint: str, data: Optional[dict] = None, json: Optional[dict] = None) -> dict:
+    def _post(self, endpoint: str, data: Optional[dict | list[tuple[str, str]]] = None, json: Optional[dict] = None) -> dict:
         """
         Performs a POST request and handles the response.
 

@@ -217,7 +217,62 @@ Execute an operation across many or all of your sites at once.
 *   **Run:** `python examples/tasks/03_run_bulk_wp_cli_task.py`
 *   **Shows:** Creating a `run-wp-cli-command` task to execute a WP-CLI command on all sites and get results via webhook.
 
-## 🍃 Step 9: Explore Other Endpoints
+### 📦 Bulk Software Management (Dedicated Method)
+*   **Run:** `python examples/tasks/04_run_bulk_software_task.py`
+*   **Shows:** Using `client.tasks.create_software()` — the per-type method that only accepts software-task params — to install a plugin across all sites.
+
+### 🔍 Bulk File Search (Dedicated Method)
+*   **Run:** `python examples/tasks/05_run_bulk_find_files_task.py`
+*   **Shows:** Using `client.tasks.create_find_files()` to search every client site for a file pattern.
+
+### ⌨️ Bulk WP-CLI Commands (Dedicated Method)
+*   **Run:** `python examples/tasks/06_run_bulk_wp_cli_task.py`
+*   **Shows:** Using `client.tasks.create_wp_cli()` to run a WP-CLI command on every client site.
+
+### 🛡️ Bulk WPCloud Scan
+*   **Run:** `python examples/tasks/07_run_bulk_wpcloud_scan_task.py`
+*   **Shows:** Using `client.tasks.create_wpcloud_scan()` to run a WPScan vulnerability scan (or `pnt-versions` plugin/theme inventory) across every client site, with per-site results delivered via webhook.
+
+
+## ☁️ Step 9: Migrate a Site to WP.Cloud
+End-to-end examples to migrate an existing WordPress site from a remote host to a new Atomic site.
+
+Before you begin:
+- Ensure your `.env` is configured (see Getting Started above).
+- You will need SSH access to the source server (user + host). The scripts attempt to install a public key automatically; if that fails, you'll be shown the key to add manually to `~/.ssh/authorized_keys` on the source.
+
+### 1) Prepare Destination Site
+- **Run:** `python examples/migrations/01_prepare_destination_site.py`
+- **Configure:** Update `DESTINATION_DOMAIN`, `ADMIN_USER`, and `ADMIN_EMAIL` in the script to your desired values.
+- **Shows:**
+  - Creating a new empty destination site with `client.sites.create()` and meta `{"allow_site_migration": "true"}`.
+  - Polling the returned `Job` until it completes.
+  - Safe handling when the destination domain already exists.
+
+### 2) Create Migration and Install Key
+- **Run:** `python examples/migrations/02_create_migration_with_new_key.py`
+- **Configure:** Update `SOURCE_HOST` and `SOURCE_USER` in the script to match your source server.
+- **Shows:**
+  - Creating a migration with `client.migrations.create()` for the destination domain.
+  - Receiving an SSH public key (`ssh_id_pub`) to authorize on the source server.
+  - Auto-installing the key via SSH, with clear fallback instructions if it fails.
+  - Writing the `migration_id` to `migration_id.txt` for later steps.
+
+### 3) Run Preflight and Monitor
+- **Run:** `python examples/migrations/03_run_preflight_and_monitor.py`
+- **Shows:**
+  - Triggering preflight checks with `client.migrations.run_preflight()`.
+  - Polling the migration until `preflight-succeeded` or `preflight-failed` using `client.migrations.get()`.
+  - Clear next-step guidance on success.
+
+### 4) Start Migration and Monitor
+- **Run:** `python examples/migrations/04_start_migration_and_monitor.py`
+- **Shows:**
+  - Setting the migration to ready with `client.migrations.set_ready()`.
+  - Polling until `migration-succeeded` or `migration-failed`.
+  - Displaying the Response Ticket ID for audit/debugging.
+
+## 🍃 Step 10: Explore Other Endpoints
 ### ⏱️ Manage Cron Entries
 *   **Run:** `python examples/cron/01_manage_cron.py [--domain example.com | --site-id 12345]`
 *   **Shows:**
@@ -246,7 +301,7 @@ Execute an operation across many or all of your sites at once.
 *   **Run:** `python examples/email/01_list_blocked_domains.py`
 *   **Shows:** Using `client.email` to retrieve a list of domains that have been blocked from sending email.
 
-## 🧹 Step 10: Clean Up
+## 🧹 Step 11: Clean Up
 *   **Goal:** Delete the test site created in the examples.
 *   **Run:** `python examples/sites/99_delete_site.py`
 *   **Shows:** A script that includes a safety prompt and then permanently deletes the test site from your account, waiting for the deletion job to complete.

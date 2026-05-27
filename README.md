@@ -21,9 +21,9 @@ For more examples see the [`examples/`](./examples) directory.
 -   **Intelligent Helpers**: The SDK abstracts away complexities such as building form-data payloads, handling different SSH connection types, and managing API inconsistencies.
 
 This SDK provides clients for:
--   📂 **Sites**: Full lifecycle management.
+-   📂 **Sites**: Full lifecycle management, including the one-way `allow_ssh_migration` consent gate for incoming migrations.
 -   🗄️ **Backups**: Create, list, download, and delete backups.
--   🔑 **SSH**: Manage site-specific users, client-wide keys, and aliases.
+-   🔑 **SSH**: Manage site-specific users, client-wide keys, aliases, and reverse-lookup users by name.
 -   📊 **Metrics**: Query detailed performance and visitor analytics.
 -   🚀 **Tasks**: Run bulk operations across all your sites.
 -   🌐 **Edge Cache**: Control caching and DDoS protection.
@@ -122,7 +122,6 @@ except NotFoundError:
 Creating a site is an asynchronous operation. The SDK returns a `Job` object that you can use to poll for its status.
 
 ```python
-import time
 from atomic_sdk import InvalidRequestError
 from atomic_sdk.models import Job
 
@@ -138,18 +137,8 @@ try:
     print(f"Site creation job started with ID: {new_site_job.job_id}")
     print("Waiting for job to complete...")
 
-    # Poll the job status until it's finished
-    while True:
-        status = new_site_job.status()
-        print(f"  - Job status: {status["_status"]}")
-
-        job_state = status["_status"] if isinstance(status, dict) and "_status" in status else status
-
-        if job_state in ("success", "failed", "error"):
-            final_status = job_state
-            break
-
-        time.sleep(10) # Wait for 10 seconds before polling again
+    # Block until the job finishes, polling every 10 seconds
+    final_status = new_site_job.wait(timeout=600, poll_interval=10)
 
     if final_status == "success":
         print(f"Site '{new_site_job.domain_name}' was created successfully!")

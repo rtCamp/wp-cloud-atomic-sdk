@@ -20,6 +20,8 @@ from .api.sites import SitesClient
 from .api.ssh import SSHClient
 from .api.tasks import TasksClient
 from .api.utility import UtilityClient
+from .api.migrations import MigrationsClient
+from .api.response_tickets import ResponseTicketsClient
 
 
 class AtomicClient:
@@ -97,6 +99,8 @@ class AtomicClient:
         self.ssh = SSHClient(*resource_args)
         self.tasks = TasksClient(*resource_args)
         self.utility = UtilityClient(*resource_args)
+        self.migrations = MigrationsClient(*resource_args)
+        self.response_tickets = ResponseTicketsClient(*resource_args)
 
         # Pass a reference of the main client to resource clients that return Job objects,
         # so Job.status() can call self._client.sites.get_job_status().
