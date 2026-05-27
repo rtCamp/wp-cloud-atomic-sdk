@@ -21,12 +21,15 @@ For more examples see the [`examples/`](./examples) directory.
 -   **Intelligent Helpers**: The SDK abstracts away complexities such as building form-data payloads, handling different SSH connection types, and managing API inconsistencies.
 
 This SDK provides clients for:
--   📂 **Sites**: Full lifecycle management.
+-   📂 **Sites**: Full lifecycle management, including the one-way `allow_ssh_migration` consent gate for incoming migrations.
 -   🗄️ **Backups**: Create, list, download, and delete backups.
--   🔑 **SSH**: Manage site-specific users, client-wide keys, and aliases.
+-   🔑 **SSH**: Manage site-specific users, client-wide keys, aliases, and reverse-lookup users by name.
 -   📊 **Metrics**: Query detailed performance and visitor analytics.
 -   🚀 **Tasks**: Run bulk operations across all your sites.
 -   🌐 **Edge Cache**: Control caching and DDoS protection.
+-   🔐 **Custom SSL Certificates**: Stage, activate, and manage your own SSL certificates.
+-   🛡️ **Security**: Manage egress firewall rules (allow / deny outbound traffic per port and destination).
+-   ⏱️ **Cron**: List, add, and remove scheduled WP-Cron entries.
 -   ⚙️ **Servers**: Get information on available datacenters and PHP versions.
 -   👤 **Client**: Manage account-wide settings like webhooks.
 -   ✉️ **Email**: Check the email sending blocklist.
@@ -176,7 +179,32 @@ print(f"Software management job ({software_job.job_id}) has been queued.")
 # You can use software_job.wait() or a polling loop here as well
 ```
 
-### 5. Purging the Edge Cache
+### 5. Streaming a Backup Download
+
+Filesystem backups can be large, so use `download()` or `get_stream()` when you do not want to hold the whole file in memory.
+Streaming downloads default to requests' no-timeout behavior; pass `timeout=` if your application needs one.
+
+```python
+with open("/tmp/site-backup.tar.bz2", "wb") as dest:
+    bytes_written = client.backups.download(
+        backup_id=123456,
+        dest=dest,
+        domain="new-sdk-site.com",
+    )
+
+print(f"Downloaded {bytes_written} bytes.")
+```
+
+For HTTP proxying or custom piping, iterate chunks directly:
+
+```python
+for chunk in client.backups.get_stream(backup_id=123456, domain="new-sdk-site.com"):
+    process(chunk)
+```
+
+`client.backups.get()` is still available for small backups, but it returns a single `bytes` object and therefore buffers the full response in memory.
+
+### 6. Purging the Edge Cache
 
 A simple, one-line command to purge a site's edge cache.
 
@@ -185,7 +213,7 @@ client.edge_cache.purge(domain="new-sdk-site.com")
 print("Edge cache purge command sent for new-sdk-site.com.")
 ```
 
-### 6. Error Handling
+### 7. Error Handling
 
 The SDK uses custom exceptions to make error handling clean and predictable.
 

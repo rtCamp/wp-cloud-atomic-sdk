@@ -9,14 +9,19 @@ else:
 
 from .api.backups import BackupsClient
 from .api.client import ClientClient
+from .api.cron import CronClient
+from .api.custom_certificates import CustomCertificatesClient
 from .api.edge_cache import EdgeCacheClient
 from .api.email import EmailClient
 from .api.metrics import MetricsClient
+from .api.security import SecurityClient
 from .api.servers import ServersClient
 from .api.sites import SitesClient
 from .api.ssh import SSHClient
 from .api.tasks import TasksClient
 from .api.utility import UtilityClient
+from .api.migrations import MigrationsClient
+from .api.response_tickets import ResponseTicketsClient
 
 
 class AtomicClient:
@@ -60,17 +65,24 @@ class AtomicClient:
         # Instantiate and attach all the resource-specific clients
         self.backups = BackupsClient(self._session, self.BASE_URL, self.client_id_or_name)
         self.client = ClientClient(self._session, self.BASE_URL, self.client_id_or_name)
+        self.cron = CronClient(self._session, self.BASE_URL, self.client_id_or_name)
+        self.custom_certificates = CustomCertificatesClient(self._session, self.BASE_URL, self.client_id_or_name)
         self.edge_cache = EdgeCacheClient(self._session, self.BASE_URL, self.client_id_or_name)
         self.email = EmailClient(self._session, self.BASE_URL, self.client_id_or_name)
         self.metrics = MetricsClient(self._session, self.BASE_URL, self.client_id_or_name)
+        self.security = SecurityClient(self._session, self.BASE_URL, self.client_id_or_name)
         self.servers = ServersClient(self._session, self.BASE_URL, self.client_id_or_name)
         self.sites = SitesClient(self._session, self.BASE_URL, self.client_id_or_name)
         self.ssh = SSHClient(self._session, self.BASE_URL, self.client_id_or_name)
         self.tasks = TasksClient(self._session, self.BASE_URL, self.client_id_or_name)
         self.utility = UtilityClient(self._session, self.BASE_URL, self.client_id_or_name)
+        self.migrations = MigrationsClient(self._session, self.BASE_URL, self.client_id_or_name)
+        self.response_tickets = ResponseTicketsClient(self._session, self.BASE_URL, self.client_id_or_name)
 
-        # Pass a reference of the main client to the sites client for job status checks
+        # Pass a reference of the main client to resource clients that return Job objects,
+        # so Job.status() can call self._client.sites.get_job_status().
         self.sites._client = self
+        self.ssh._client = self
 
     def __repr__(self):
         return f"<AtomicClient client_id='{self.client_id_or_name}'>"

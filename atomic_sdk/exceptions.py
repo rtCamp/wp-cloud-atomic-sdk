@@ -23,6 +23,12 @@ class InvalidRequestError(AtomicAPIError):
         super().__init__(message, status_code)
 
 
+class ConflictError(InvalidRequestError):
+    """Raised when a request conflicts with existing resource state (HTTP 409)."""
+    def __init__(self, message="The request conflicts with existing state.", status_code=409):
+        super().__init__(message, status_code)
+
+
 class NotFoundError(AtomicAPIError):
     """Raised when a resource is not found (e.g., HTTP 404)."""
     def __init__(self, message="The requested resource was not found.", status_code=404):

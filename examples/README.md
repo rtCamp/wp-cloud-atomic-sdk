@@ -102,6 +102,17 @@ Once your site exists, you can perform various management tasks.
     *   Retrying a failed SSL provisioning attempt with `client.sites.retry_ssl_provisioning()`.
     *   Managing HSTS settings like `includeSubDomains` with `client.sites.set_hsts_subdomain()`.
 
+### 🔐 Manage Custom SSL Certificates
+*   **Run:** `python examples/custom_certificates/01_install_certificate.py --cert <file> --key <file>`
+*   **Shows:**
+    *   Validating a certificate pair with `client.custom_certificates.validate()`.
+    *   Staging and activating in one step with `client.custom_certificates.stage_and_activate()`.
+*   **Run:** `python examples/custom_certificates/02_manage_certificate.py list`
+*   **Shows:**
+    *   Listing all certificates for a site.
+    *   Getting the currently active certificate with `active` subcommand.
+    *   Subcommands for `deactivate` and `delete` to manage specific certificate IDs.
+
 ### 🗃️ Access the Database
 *   **Run:** `python examples/sites/06_get_phpmyadmin_url.py`
 *   **Shows:**
@@ -124,6 +135,12 @@ Learn how to create, list, download, and delete backups. Note that on-demand bac
     *   Getting specific metadata for that backup with `client.backups.info()`.
     *   Downloading the raw backup file content as bytes with `client.backups.get()`.
     *   Saving the downloaded content to a local file.
+
+### 📥 Stream a Backup to Disk
+*   **Run:** `BACKUP_ID=123 python examples/backups/03_download_streaming.py`
+*   **Shows:**
+    *   Streaming a backup with `client.backups.download()` instead of buffering it in memory.
+    *   Writing chunks directly to a local binary file.
 
 ### 🗑️ Delete an On-Demand Backup
 *   **Run:** `python examples/backups/99_delete_ondemand_backup.py`
@@ -200,6 +217,54 @@ Execute an operation across many or all of your sites at once.
 *   **Run:** `python examples/tasks/03_run_bulk_wp_cli_task.py`
 *   **Shows:** Creating a `run-wp-cli-command` task to execute a WP-CLI command on all sites and get results via webhook.
 
+
+## ☁️ Step 9: Migrate a Site to WP.Cloud
+End-to-end examples to migrate an existing WordPress site from a remote host to a new Atomic site.
+
+Before you begin:
+- Ensure your `.env` is configured (see Getting Started above).
+- You will need SSH access to the source server (user + host). The scripts attempt to install a public key automatically; if that fails, you'll be shown the key to add manually to `~/.ssh/authorized_keys` on the source.
+
+### 1) Prepare Destination Site
+- **Run:** `python examples/migrations/01_prepare_destination_site.py`
+- **Configure:** Update `DESTINATION_DOMAIN`, `ADMIN_USER`, and `ADMIN_EMAIL` in the script to your desired values.
+- **Shows:**
+  - Creating a new empty destination site with `client.sites.create()` and meta `{"allow_site_migration": "true"}`.
+  - Polling the returned `Job` until it completes.
+  - Safe handling when the destination domain already exists.
+
+### 2) Create Migration and Install Key
+- **Run:** `python examples/migrations/02_create_migration_with_new_key.py`
+- **Configure:** Update `SOURCE_HOST` and `SOURCE_USER` in the script to match your source server.
+- **Shows:**
+  - Creating a migration with `client.migrations.create()` for the destination domain.
+  - Receiving an SSH public key (`ssh_id_pub`) to authorize on the source server.
+  - Auto-installing the key via SSH, with clear fallback instructions if it fails.
+  - Writing the `migration_id` to `migration_id.txt` for later steps.
+
+### 3) Run Preflight and Monitor
+- **Run:** `python examples/migrations/03_run_preflight_and_monitor.py`
+- **Shows:**
+  - Triggering preflight checks with `client.migrations.run_preflight()`.
+  - Polling the migration until `preflight-succeeded` or `preflight-failed` using `client.migrations.get()`.
+  - Clear next-step guidance on success.
+
+### 4) Start Migration and Monitor
+- **Run:** `python examples/migrations/04_start_migration_and_monitor.py`
+- **Shows:**
+  - Setting the migration to ready with `client.migrations.set_ready()`.
+  - Polling until `migration-succeeded` or `migration-failed`.
+  - Displaying the Response Ticket ID for audit/debugging.
+
+## 🍃 Step 10: Explore Other Endpoints
+### ⏱️ Manage Cron Entries
+*   **Run:** `python examples/cron/01_manage_cron.py [--domain example.com | --site-id 12345]`
+*   **Shows:**
+    *   Listing all cron entries with `client.cron.list()`.
+    *   Adding a new entry with `client.cron.add()` using a named schedule.
+    *   Finding a specific entry with `client.cron.find()`.
+    *   Removing an entry with `client.cron.remove()`.
+
 ### 📦 Bulk Software Management (Dedicated Method)
 *   **Run:** `python examples/tasks/04_run_bulk_software_task.py`
 *   **Shows:** Using `client.tasks.create_software()` — the per-type method that only accepts software-task params — to install a plugin across all sites.
@@ -224,6 +289,14 @@ Execute an operation across many or all of your sites at once.
 ### 🌍 Get Server Information
 *   **Run:** `python examples/servers/01_get_server_info.py`
 *   **Shows:** Using `client.servers` to list available datacenters and supported PHP versions on the platform.
+
+### 🛡️ Manage Egress Firewall Rules
+*   **Run:** `python examples/security/01_manage_firewall_rules.py`
+*   **Shows:**
+    *   Listing existing egress firewall rules with `client.security.list_rules()`.
+    *   Adding an outbound `allow`/`deny` rule with `client.security.add_rule()` (TCP/UDP, port 1-65535, IP/CIDR destination).
+    *   Locating a rule by ID, port, destination, etc. with `client.security.find_rule()`.
+    *   Removing a rule with `client.security.remove_rule()`.
 
 ### ✉️ Check Email Blocklist
 *   **Run:** `python examples/email/01_list_blocked_domains.py`
