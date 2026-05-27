@@ -27,7 +27,7 @@ keywords = ["automattic", "wpcloud", "atomic", "wordpress", "hosting", "api", "s
 # Core dependencies
 dependencies = [
     "requests~=2.31",
-    "pydantic~=2.5",
+    "pydantic~=2.12",
     "importlib-metadata; python_version < '3.8'",
     "typing-extensions ~= 4.0",
 ]
