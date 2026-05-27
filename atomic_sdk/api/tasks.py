@@ -60,7 +60,7 @@ class TasksClient(ResourceClient):
 
         # Send the payload as a list of tuples to ensure correct form encoding
         response_data = self._post(endpoint, data=payload_list)
-        return TaskCreationResponse.parse_obj(response_data)
+        return TaskCreationResponse.model_validate(response_data)
 
     def get(self, task_id: int) -> Task:
         """
@@ -74,7 +74,7 @@ class TasksClient(ResourceClient):
         """
         endpoint = f"/task-get/{task_id}"
         response_data = self._post(endpoint)
-        return Task.parse_obj(response_data)
+        return Task.model_validate(response_data)
 
     def interrupt(self, task_id: int) -> Dict:
         """
