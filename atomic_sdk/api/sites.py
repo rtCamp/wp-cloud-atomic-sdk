@@ -391,7 +391,7 @@ class SitesClient(ResourceClient):
 
         _, identifier = self._get_service_and_identifier(site_id, domain)
         endpoint = f"/site-meta/{identifier}/{key}/remove"
-        return self._post(endpoint)
+        return self._get(endpoint)
 
     def get_phpmyadmin_url(self, site_id: Optional[int] = None, domain: Optional[str] = None) -> str:
         """

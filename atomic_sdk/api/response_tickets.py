@@ -20,7 +20,7 @@ class ResponseTicketsClient(ResourceClient):
         Returns:
             A dictionary containing the summary of the ticket.
         """
-        endpoint = f"/response-ticket/get/summary"
+        endpoint = "/response-ticket/get/summary"
         return self._post(endpoint, data={"response-ticket-id": ticket_id})
 
     def get_full(self, ticket_id: str) -> Dict[str, Any]:
@@ -43,9 +43,9 @@ class ResponseTicketsClient(ResourceClient):
 
         Args:
             ticket_ids: A list of response ticket IDs.
-        Returns:
-        A dictionary containing the status of multiple tickets.
-        """
-        endpoint = f"/response-ticket/multi-status"
 
-        return self._post(endpoint, data=[("response-tickets[]", _) for _ in ticket_ids])
+        Returns:
+            A dictionary containing the status of multiple tickets.
+        """
+        endpoint = "/response-ticket/multi-status"
+        return self._post(endpoint, data={"response-tickets[]": ticket_ids})
