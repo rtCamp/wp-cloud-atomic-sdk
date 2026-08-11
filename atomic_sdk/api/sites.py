@@ -376,6 +376,23 @@ class SitesClient(ResourceClient):
         endpoint = f"/site-meta/{identifier}/{key}/update"
         return self._post(endpoint, data={"value": value})
 
+    def remove_meta(self, key: str, site_id: Optional[int] = None, domain: Optional[str] = None) -> dict:
+        """
+        Removes a single metadata key for a site.
+
+        Args:
+            key: The metadata key to remove (e.g., 'php_version', 'suspended').
+            site_id: The Atomic site ID.
+            domain: The domain name of the site.
+
+        Returns:
+            The API response data.
+        """
+
+        _, identifier = self._get_service_and_identifier(site_id, domain)
+        endpoint = f"/site-meta/{identifier}/{key}/remove"
+        return self._get(endpoint)
+
     def get_phpmyadmin_url(self, site_id: Optional[int] = None, domain: Optional[str] = None) -> str:
         """
         Gets a time-limited URL for accessing a site's database via phpMyAdmin.
