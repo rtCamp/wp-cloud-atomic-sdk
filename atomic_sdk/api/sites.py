@@ -545,3 +545,29 @@ class SitesClient(ResourceClient):
         _, identifier = self._get_service_and_identifier(site_id, domain)
         endpoint = f"/site-allow-ssh-migration/{identifier}"
         return self._post(endpoint)
+
+    def restore_site(self, restore_from_fs: int, restore_from_db: int, site_id: Optional[int] = None, domain: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Restore a site from its own backups.
+
+        Note:
+            ``allow_restore`` metadata key must be set to a recent
+            unix timestamp and the site must be suspended with a
+            503 status code for the restore operation to start.
+
+        Args:
+            restore_from_fs: FileSystem Backup to Restore From.
+            restore_from_db: Database Backup to Restore From.
+            site_id: The Atomic site ID.
+            domain: The domain name of the site.
+
+        Returns:
+            A dict with a ``atomic_job_id`` (int) key and a
+            ``response_ticket_id`` (str) key. You can query
+            the associated response ticket for restoring the
+            backup.
+        """
+        _, identifier = self._get_service_and_identifier(site_id, domain)
+        endpoint = f"/restore-site/{identifier}"
+        payload = [("restore_from[]", str(restore_from_fs)), ("restore_from[]", str(restore_from_db))]
+        return self._post(endpoint, data=payload)
