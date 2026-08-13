@@ -18,7 +18,7 @@ latest backup of that type.
 import os
 import sys
 import time
-from datetime import datetime, timedelta, UTC
+from datetime import datetime, timedelta, timezone
 
 from dotenv import load_dotenv # type: ignore
 
@@ -95,9 +95,18 @@ def main() -> None:
 
     try:
         print("\n--- Allowing restore and suspending the site with a 503 status ---")
-        client.sites.update_meta(key="allow_restore", value=int(datetime.now(UTC).timestamp()), domain=domain)
+        client.sites.update_meta(key="allow_restore", value=int(datetime.now(timezone.utc).timestamp()), domain=domain)
         client.sites.update_meta(key="suspended", value=503, domain=domain)
+    except AtomicAPIError as exc:
+        print(f"❌ API error before the restore started: {exc}")
+        try:
+            client.sites.remove_meta(key="suspended", domain=domain)
+            print("   The site was unsuspended since no restore ran.")
+        except AtomicAPIError as unsuspend_exc:
+            print(f"   Could not unsuspend the site, do so manually: {unsuspend_exc}")
+        sys.exit(1)
 
+    try:
         print("\n--- Starting the restore ---")
         result = client.sites.restore_site(
             restore_from_fs=fs_backup_id,
@@ -105,12 +114,9 @@ def main() -> None:
             domain=domain,
         )
     except AtomicAPIError as exc:
-        print(f"❌ API error before the restore started: {exc}")
-        try:
-            client.sites.update_meta(key="suspended", value=0, domain=domain)
-            print("   The site was unsuspended since no restore ran.")
-        except AtomicAPIError as unsuspend_exc:
-            print(f"   Could not unsuspend the site, do so manually: {unsuspend_exc}")
+        print(f"❌ API error from the restore request: {exc}")
+        print("   The restore may still have started; the site remains suspended.")
+        print("   Verify the site state before unsuspending it manually.")
         sys.exit(1)
 
     job_id = result.get("atomic_job_id")
@@ -120,8 +126,8 @@ def main() -> None:
     try:
         print("\n--- Polling the response ticket until the restore completes ---")
         status = "running"
-        deadline = datetime.now(UTC) + timedelta(seconds=POLL_TIMEOUT_SECONDS)
-        while status == "running" and datetime.now(UTC) < deadline:
+        deadline = datetime.now(timezone.utc) + timedelta(seconds=POLL_TIMEOUT_SECONDS)
+        while status == "running" and datetime.now(timezone.utc) < deadline:
             time.sleep(POLL_INTERVAL_SECONDS)
             summary = client.response_tickets.get_summary(ticket_id)
             if not summary:
