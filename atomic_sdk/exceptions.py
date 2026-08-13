@@ -23,6 +23,13 @@ class InvalidRequestError(AtomicAPIError):
         super().__init__(message, status_code)
 
 
+class RateLimitError(AtomicAPIError):
+    """Raised when the API returns HTTP 429 (rate limited)."""
+    def __init__(self, message="Rate limit exceeded.", status_code=429, retry_after=None):
+        super().__init__(message, status_code)
+        self.retry_after = retry_after
+
+
 class ConflictError(InvalidRequestError):
     """Raised when a request conflicts with existing resource state (HTTP 409)."""
     def __init__(self, message="The request conflicts with existing state.", status_code=409):

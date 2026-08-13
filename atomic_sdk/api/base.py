@@ -1,13 +1,36 @@
-import requests
+import logging
+import random
+import time
+from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 from typing import Iterator, Optional, Tuple, Union
 
-from ..exceptions import AtomicAPIError, ConflictError, InvalidRequestError, NotFoundError, ServerError
+import requests
+
+from ..exceptions import AtomicAPIError, ConflictError, InvalidRequestError, NotFoundError, RateLimitError, ServerError
+
+
+logger = logging.getLogger("atomic_sdk.retry")
+
+
+RETRYABLE_REQUEST_EXCEPTIONS = (
+    requests.exceptions.Timeout,
+    requests.exceptions.ChunkedEncodingError,
+)
 
 
 class ResourceClient:
     """A base client for a group of API resources."""
 
-    def __init__(self, session: requests.Session, base_url: str, client_id_or_name: str):
+    def __init__(
+        self,
+        session: requests.Session,
+        base_url: str,
+        client_id_or_name: str,
+        max_retries: int = 3,
+        backoff_base: float = 0.5,
+        timeout: Optional[Union[float, Tuple[float, float]]] = 30,
+    ):
         """
         Initializes the ResourceClient.
 
@@ -15,10 +38,16 @@ class ResourceClient:
             session: A requests.Session object configured with authentication.
             base_url: The base URL for the Atomic API.
             client_id_or_name: The client's identifier (name or ID).
+            max_retries: Number of retries for 429, 5xx, and connection errors.
+            backoff_base: Base delay in seconds for exponential backoff with jitter.
+            timeout: Default timeout passed to requests calls.
         """
         self._session = session
         self._base_url = base_url
         self._client_id_or_name = client_id_or_name
+        self._timeout = timeout
+        self._max_retries = max_retries
+        self._backoff_base = backoff_base
 
     def _get(self, endpoint: str, params: Optional[dict] = None) -> dict:
         """
@@ -61,15 +90,31 @@ class ResourceClient:
             The raw response content as bytes.
         """
         url = self._base_url.rstrip('/') + endpoint
+        attempt = 0
+        while True:
+            try:
+                response = self._session.get(url, params=params, stream=True, timeout=300) # Longer timeout for downloads
+                response.raise_for_status()
+                break
+            except requests.exceptions.HTTPError as e:
+                if self._retry_http_error(e, attempt):
+                    attempt += 1
+                    continue
+                self._raise_for_http_error(e)
+            except requests.exceptions.RequestException as e:
+                if self._retry_request_exception(e, url, attempt):
+                    attempt += 1
+                    continue
+                raise AtomicAPIError(f"Request failed for {url}: {e}") from e
+
         try:
-            response = self._session.get(url, params=params, timeout=300) # Longer timeout for downloads
-            response.raise_for_status()
             return response.content
-        except requests.exceptions.HTTPError as e:
-            # Re-raise with a more specific custom exception if needed
-            raise AtomicAPIError(f"HTTP Error for {url}: {e.response.status_code} {e.response.text}") from e
         except requests.exceptions.RequestException as e:
             raise AtomicAPIError(f"Request failed for {url}: {e}") from e
+        finally:
+            close = getattr(response, "close", None)
+            if close:
+                close()
 
     def _get_stream(
         self,
@@ -101,6 +146,7 @@ class ResourceClient:
             ServerError: For 5xx responses.
         """
         url = self._base_url.rstrip('/') + endpoint
+        timeout = self._timeout if timeout is None else timeout
         try:
             with self._session.get(url, params=params, stream=True, timeout=timeout) as response:
                 response.raise_for_status()
@@ -125,6 +171,12 @@ class ResourceClient:
 
         if status_code == 404:
             raise NotFoundError(message, status_code) from error
+        if status_code == 429:
+            raise RateLimitError(
+                message,
+                status_code,
+                retry_after=self._parse_retry_after(error.response),
+            ) from error
         if status_code == 409:
             raise ConflictError(message, status_code) from error
         if 400 <= status_code < 500:
@@ -133,6 +185,86 @@ class ResourceClient:
             raise ServerError(message, status_code) from error
 
         raise AtomicAPIError(message, status_code) from error
+
+    @staticmethod
+    def _parse_retry_after(response: requests.Response) -> Optional[int]:
+        """Parse a Retry-After header as seconds, or as an HTTP-date."""
+        value = response.headers.get("Retry-After")
+        if not value:
+            return None
+
+        try:
+            return max(0, int(float(value)))
+        except ValueError:
+            pass
+
+        try:
+            retry_at = parsedate_to_datetime(value)
+        except (TypeError, ValueError):
+            return None
+
+        if retry_at.tzinfo is None:
+            retry_at = retry_at.replace(tzinfo=timezone.utc)
+        return max(0, int((retry_at - datetime.now(timezone.utc)).total_seconds()))
+
+    def _retry_http_error(self, error: requests.exceptions.HTTPError, attempt: int) -> bool:
+        """Sleep and return True when an HTTP error should be retried."""
+        status_code = error.response.status_code
+        if status_code != 429 and not 500 <= status_code < 600:
+            return False
+        if attempt >= self._max_retries:
+            return False
+
+        retry_after = self._parse_retry_after(error.response) if status_code == 429 else None
+        delay = retry_after if retry_after is not None else self._backoff_delay(attempt)
+
+        if status_code == 429 and retry_after is not None:
+            logger.warning(
+                "429 Retry-After=%ss, retrying (attempt %s/%s)",
+                retry_after,
+                attempt + 1,
+                self._max_retries,
+            )
+        else:
+            logger.warning(
+                "%s %s, backing off %.2fs (attempt %s/%s)",
+                status_code,
+                error.response.reason,
+                delay,
+                attempt + 1,
+                self._max_retries,
+            )
+        time.sleep(delay)
+        return True
+
+    def _retry_request_exception(self, error: requests.exceptions.RequestException, url: str, attempt: int) -> bool:
+        """Sleep and return True when a connection-level request error should be retried."""
+        if not self._is_retryable_request_exception(error):
+            return False
+        if attempt >= self._max_retries:
+            return False
+
+        delay = self._backoff_delay(attempt)
+        logger.warning(
+            "Request failed for %s: %s, backing off %.2fs (attempt %s/%s)",
+            url,
+            error,
+            delay,
+            attempt + 1,
+            self._max_retries,
+        )
+        time.sleep(delay)
+        return True
+
+    @staticmethod
+    def _is_retryable_request_exception(error: requests.exceptions.RequestException) -> bool:
+        return (
+            type(error) is requests.exceptions.ConnectionError
+            or isinstance(error, RETRYABLE_REQUEST_EXCEPTIONS)
+        )
+
+    def _backoff_delay(self, attempt: int) -> float:
+        return random.uniform(0, self._backoff_base * (2 ** attempt))
 
     def _request(self, method: str, endpoint: str, **kwargs) -> dict:
         """
@@ -151,16 +283,25 @@ class ResourceClient:
             InvalidRequestError: For 4xx client errors with a message.
         """
         url = self._base_url.rstrip('/') + endpoint
-        try:
-            response = self._session.request(method, url, **kwargs)
-            response.raise_for_status()  # Raises HTTPError for bad responses (4xx or 5xx)
-            return response.json()
+        kwargs.setdefault("timeout", self._timeout)
+        attempt = 0
+        while True:
+            try:
+                response = self._session.request(method, url, **kwargs)
+                response.raise_for_status()  # Raises HTTPError for bad responses (4xx or 5xx)
+                return response.json()
 
-        except requests.exceptions.HTTPError as e:
-            self._raise_for_http_error(e)
+            except requests.exceptions.HTTPError as e:
+                if self._retry_http_error(e, attempt):
+                    attempt += 1
+                    continue
+                self._raise_for_http_error(e)
 
-        except requests.exceptions.RequestException as e:
-            raise AtomicAPIError(f"Request failed for {url}: {e}") from e
+            except requests.exceptions.RequestException as e:
+                if self._retry_request_exception(e, url, attempt):
+                    attempt += 1
+                    continue
+                raise AtomicAPIError(f"Request failed for {url}: {e}") from e
 
     def _get_service_and_identifier(self, site_id: Optional[int], domain: Optional[str]) -> Tuple[str, Union[int, str]]:
         """

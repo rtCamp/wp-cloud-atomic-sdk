@@ -29,7 +29,14 @@ class AtomicClient:
 
     BASE_URL = "https://atomic-api.wordpress.com/api/v1.0/"
 
-    def __init__(self, api_key: str, client_id_or_name: str, timeout: int = 30):
+    def __init__(
+        self,
+        api_key: str,
+        client_id_or_name: str,
+        timeout: int = 30,
+        max_retries: int = 3,
+        backoff_base: float = 0.5,
+    ):
         """
         Initializes the Atomic API client.
 
@@ -37,15 +44,23 @@ class AtomicClient:
             api_key: Your platform or developer API key for authentication.
             client_id_or_name: Your unique client identifier (e.g., 'your-client-name').
             timeout: The timeout in seconds for API requests. Defaults to 30.
+            max_retries: Number of retries for 429, 5xx, and connection errors. Defaults to 3.
+            backoff_base: Base delay in seconds for exponential backoff with jitter.
         """
         if not api_key:
             raise ValueError("An API key is required.")
         if not client_id_or_name:
             raise ValueError("A client identifier (name or ID) is required.")
+        if max_retries < 0:
+            raise ValueError("max_retries must be greater than or equal to 0.")
+        if backoff_base < 0:
+            raise ValueError("backoff_base must be greater than or equal to 0.")
 
         self.api_key = api_key
         self.client_id_or_name = client_id_or_name
         self.timeout = timeout
+        self.max_retries = max_retries
+        self.backoff_base = backoff_base
 
         # Get the package version at runtime to avoid circular imports
         try:
@@ -60,24 +75,32 @@ class AtomicClient:
             "User-Agent": f"Python AtomicSDK/{sdk_version}",
             "Accept": "application/json",
         })
-        self._session.timeout = self.timeout
+
+        resource_args = (
+            self._session,
+            self.BASE_URL,
+            self.client_id_or_name,
+            self.max_retries,
+            self.backoff_base,
+            self.timeout,
+        )
 
         # Instantiate and attach all the resource-specific clients
-        self.backups = BackupsClient(self._session, self.BASE_URL, self.client_id_or_name)
-        self.client = ClientClient(self._session, self.BASE_URL, self.client_id_or_name)
-        self.cron = CronClient(self._session, self.BASE_URL, self.client_id_or_name)
-        self.custom_certificates = CustomCertificatesClient(self._session, self.BASE_URL, self.client_id_or_name)
-        self.edge_cache = EdgeCacheClient(self._session, self.BASE_URL, self.client_id_or_name)
-        self.email = EmailClient(self._session, self.BASE_URL, self.client_id_or_name)
-        self.metrics = MetricsClient(self._session, self.BASE_URL, self.client_id_or_name)
-        self.security = SecurityClient(self._session, self.BASE_URL, self.client_id_or_name)
-        self.servers = ServersClient(self._session, self.BASE_URL, self.client_id_or_name)
-        self.sites = SitesClient(self._session, self.BASE_URL, self.client_id_or_name)
-        self.ssh = SSHClient(self._session, self.BASE_URL, self.client_id_or_name)
-        self.tasks = TasksClient(self._session, self.BASE_URL, self.client_id_or_name)
-        self.utility = UtilityClient(self._session, self.BASE_URL, self.client_id_or_name)
-        self.migrations = MigrationsClient(self._session, self.BASE_URL, self.client_id_or_name)
-        self.response_tickets = ResponseTicketsClient(self._session, self.BASE_URL, self.client_id_or_name)
+        self.backups = BackupsClient(*resource_args)
+        self.client = ClientClient(*resource_args)
+        self.cron = CronClient(*resource_args)
+        self.custom_certificates = CustomCertificatesClient(*resource_args)
+        self.edge_cache = EdgeCacheClient(*resource_args)
+        self.email = EmailClient(*resource_args)
+        self.metrics = MetricsClient(*resource_args)
+        self.security = SecurityClient(*resource_args)
+        self.servers = ServersClient(*resource_args)
+        self.sites = SitesClient(*resource_args)
+        self.ssh = SSHClient(*resource_args)
+        self.tasks = TasksClient(*resource_args)
+        self.utility = UtilityClient(*resource_args)
+        self.migrations = MigrationsClient(*resource_args)
+        self.response_tickets = ResponseTicketsClient(*resource_args)
 
         # Pass a reference of the main client to resource clients that return Job objects,
         # so Job.status() can call self._client.sites.get_job_status().
