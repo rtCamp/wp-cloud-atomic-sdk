@@ -1,0 +1,44 @@
+name: "Copilot code review setup steps"
+
+# This file configures the environment Copilot code review runs in for this
+# repository. It exists mainly to pin the runner: this repository is public, and
+# our self-hosted Actions Runner Controller scale sets are not exposed to public
+# repositories, so Copilot code review must use GitHub-hosted runners instead of
+# the organization default.
+#
+# When this file is present it takes precedence over `copilot-setup-steps.yml`
+# and over the organization-level runner type for Copilot code review only
+# (Copilot cloud agent is unaffected).
+#
+# Docs: https://docs.github.com/en/copilot/how-tos/copilot-on-github/set-up-copilot/configure-runners
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/copilot-code-review.yml
+  pull_request:
+    paths:
+      - .github/workflows/copilot-code-review.yml
+
+jobs:
+  # The job must be named `copilot-setup-steps`, otherwise it is ignored.
+  copilot-setup-steps:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install the SDK with dev dependencies
+        run: pip install -e ".[dev]"
