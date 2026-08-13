@@ -34,7 +34,7 @@ DB_BACKUP_ID = os.environ.get("DB_BACKUP_ID")
 CONFIRM_TOKEN = "I-UNDERSTAND-THIS-WILL-OVERWRITE-THE-SITE"
 
 POLL_INTERVAL_SECONDS = 10
-POLL_TIMEOUT_SECONDS = 600
+POLL_TIMEOUT_SECONDS = 6 * 60 * 60  # 6 hours
 
 
 def main() -> None:
@@ -140,11 +140,22 @@ def main() -> None:
             print(f"❌ Restore failed. Inspect the full ticket with client.response_tickets.get_full({ticket_id!r}).")
             print("   The site is still suspended; unsuspend it manually once resolved.")
             sys.exit(1)
-        else:
+        elif status == "running":
             print(f"⚠️  Restore still running after {POLL_TIMEOUT_SECONDS}s. Keep polling ticket {ticket_id!r}.")
             print("   The site remains suspended until the restore finishes.")
+            sys.exit(1)
+        else:
+            print(f"⚠️  Unexpected ticket status {status!r}. Inspect ticket {ticket_id!r}.")
+            print("   The site remains suspended; unsuspend it manually once resolved.")
+            sys.exit(1)
     except AtomicAPIError as exc:
-        print(f"❌ API error: {exc}")
+        print(f"❌ API error while polling the restore or unsuspending the site: {exc}")
+        print("   If the restore completed, the site may still be suspended and serving 503.")
+        print(f"   Check ticket {ticket_id!r} and remove the 'suspended' meta manually if needed.")
+        sys.exit(1)
+    except KeyboardInterrupt:
+        print(f"\n⚠️  Interrupted. The restore may still be running; keep polling ticket {ticket_id!r}.")
+        print("   The site is still suspended and serving 503 — unsuspend it only once the restore finishes.")
         sys.exit(1)
 
 
