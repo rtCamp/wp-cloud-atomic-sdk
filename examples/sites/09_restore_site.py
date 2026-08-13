@@ -99,11 +99,7 @@ def main() -> None:
         client.sites.update_meta(key="suspended", value=503, domain=domain)
     except AtomicAPIError as exc:
         print(f"❌ API error before the restore started: {exc}")
-        try:
-            client.sites.remove_meta(key="suspended", domain=domain)
-            print("   The site was unsuspended since no restore ran.")
-        except AtomicAPIError as unsuspend_exc:
-            print(f"   Could not unsuspend the site, do so manually: {unsuspend_exc}")
+        print("   The site's suspension state was not changed by this run; verify the site meta if unsure.")
         sys.exit(1)
 
     try:
