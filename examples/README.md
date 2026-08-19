@@ -118,8 +118,14 @@ Once your site exists, you can perform various management tasks.
 *   **Shows:**
     *   Generating a secure, time-limited, single-use login URL for phpMyAdmin using `client.sites.get_phpmyadmin_url()`.
 
+### 📋 List All Sites
+*   **Run:** `python examples/sites/07_site_list.py`
+*   **Shows:**
+    *   Listing every site on your account with `client.sites.list()`.
+    *   Reading each site's `_data` metadata with `client.sites.get_meta()` to determine its site type.
+
 ## 🗄️ Step 5: Manage Backups
-Learn how to create, list, download, and delete backups. Note that on-demand backup creation is a "fire-and-forget" operation; the API does not provide a way to poll its status.
+Learn how to create, list, download, delete, and restore from backups. Note that on-demand backup creation is a "fire-and-forget" operation; the API does not provide a way to poll its status.
 
 ### ➕ Create and List Backups
 *   **Run:** `python examples/backups/01_create_and_list_backups.py`
@@ -141,6 +147,15 @@ Learn how to create, list, download, and delete backups. Note that on-demand bac
 *   **Shows:**
     *   Streaming a backup with `client.backups.download()` instead of buffering it in memory.
     *   Writing chunks directly to a local binary file.
+
+### ♻️ Restore a Site from Backups
+*   **Run:** `python examples/sites/09_restore_site.py <site_domain>`
+*   ⚠️ **DESTRUCTIVE:** overwrites the site's current files and database with the selected backups.
+*   **Shows:**
+    *   Resolving the latest filesystem and database backup pair (or using the `FS_BACKUP_ID`/`DB_BACKUP_ID` env vars).
+    *   Setting the `allow_restore` and `suspended=503` metadata preconditions with `client.sites.update_meta()`.
+    *   Starting the restore with `client.sites.restore_site()` and polling its response ticket until completion.
+    *   Unsuspending the site with `client.sites.remove_meta()` once the restore succeeds.
 
 ### 🗑️ Delete an On-Demand Backup
 *   **Run:** `python examples/backups/99_delete_ondemand_backup.py`
@@ -240,6 +255,12 @@ End-to-end examples to migrate an existing WordPress site from a remote host to 
 Before you begin:
 - Ensure your `.env` is configured (see Getting Started above).
 - You will need SSH access to the source server (user + host). The scripts attempt to install a public key automatically; if that fails, you'll be shown the key to add manually to `~/.ssh/authorized_keys` on the source.
+
+### 🔓 Allow an Incoming SSH Migration
+- **Run:** `python examples/sites/08_allow_ssh_migration.py <site_domain>`
+- ⚠️ **DESTRUCTIVE and ONE-WAY:** cannot be revoked, and the next migration into the site will overwrite its files and database.
+- **Shows:**
+  - Marking a destination site as willing to accept an incoming SSH migration with `client.sites.allow_ssh_migration()`.
 
 ### 1) Prepare Destination Site
 - **Run:** `python examples/migrations/01_prepare_destination_site.py`

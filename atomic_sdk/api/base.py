@@ -151,6 +151,9 @@ class ResourceClient:
             InvalidRequestError: For 4xx client errors with a message.
         """
         url = self._base_url.rstrip('/') + endpoint
+        # requests ignores a `timeout` attribute set on a Session, so the
+        # client-configured timeout must be passed per request.
+        kwargs.setdefault("timeout", getattr(self._session, "timeout", None))
         try:
             response = self._session.request(method, url, **kwargs)
             response.raise_for_status()  # Raises HTTPError for bad responses (4xx or 5xx)
